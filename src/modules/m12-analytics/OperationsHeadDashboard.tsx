@@ -49,14 +49,14 @@ interface KpiCardProps {
 
 function KpiCard({ label, value, sub, icon: Icon, accent }: KpiCardProps) {
   return (
-    <div className="rounded-xl border border-gray-700 bg-gray-800 p-5 flex gap-4 items-start">
+    <div className="rounded-xl border border-gray-200 bg-white p-5 flex gap-4 items-start shadow-sm">
       <div className={`rounded-lg p-2.5 flex-shrink-0 ${accent}`}>
         <Icon size={22} />
       </div>
       <div className="min-w-0">
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">{label}</p>
-        <p className="mt-1 text-2xl font-bold text-white leading-tight truncate">{value}</p>
-        {sub && <p className="mt-0.5 text-xs text-gray-500">{sub}</p>}
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</p>
+        <p className="mt-1 text-2xl font-bold text-gray-900 leading-tight truncate">{value}</p>
+        {sub && <p className="mt-0.5 text-xs text-gray-400">{sub}</p>}
       </div>
     </div>
   );
@@ -132,7 +132,6 @@ export default function OperationsHeadDashboard() {
         .filter((t) => t.invoiceDate >= MTD_START)
         .reduce((s, t) => s + t.totalAmt, 0);
 
-      // Per-store qty per product to detect low-stock SKUs
       const storeQty: Record<string, number> = {};
       mockBatches
         .filter((b) => b.storeId === store.id)
@@ -189,11 +188,11 @@ export default function OperationsHeadDashboard() {
     <div className="p-6 space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <BarChart3 size={26} className="text-emerald-400" />
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <BarChart3 size={26} className="text-emerald-600" />
           Operations Dashboard
         </h1>
-        <p className="mt-1 text-sm text-gray-400">
+        <p className="mt-1 text-sm text-gray-500">
           Platform-wide view · As of {TODAY} · All amounts include GST
         </p>
       </div>
@@ -209,21 +208,21 @@ export default function OperationsHeadDashboard() {
             value={shortRupees(todayB2CSales)}
             sub="All stores combined"
             icon={TrendingUp}
-            accent="bg-emerald-500/15 text-emerald-400"
+            accent="bg-emerald-50 text-emerald-600"
           />
           <KpiCard
             label="B2B Pipeline"
             value={shortRupees(b2bPipelineValue)}
             sub="Approved + Allocated orders"
             icon={Truck}
-            accent="bg-blue-500/15 text-blue-400"
+            accent="bg-blue-50 text-blue-600"
           />
           <KpiCard
             label="Total Stock Value"
             value={shortRupees(totalStockValue)}
             sub="Purchase cost · all locations"
             icon={Package}
-            accent="bg-violet-500/15 text-violet-400"
+            accent="bg-violet-50 text-violet-600"
           />
           <KpiCard
             label="Pending Approvals"
@@ -232,8 +231,8 @@ export default function OperationsHeadDashboard() {
             icon={Clock}
             accent={
               pendingApprovalsCount > 0
-                ? 'bg-amber-500/15 text-amber-400'
-                : 'bg-gray-600/30 text-gray-400'
+                ? 'bg-amber-50 text-amber-600'
+                : 'bg-gray-100 text-gray-400'
             }
           />
           <KpiCard
@@ -241,14 +240,14 @@ export default function OperationsHeadDashboard() {
             value={String(activeFarmers)}
             sub="Enrolled in loyalty programme"
             icon={Users}
-            accent="bg-teal-500/15 text-teal-400"
+            accent="bg-teal-50 text-teal-600"
           />
           <KpiCard
             label="Field Force Active"
             value={String(fieldForceActive)}
             sub="Agents in active status"
             icon={ShoppingBag}
-            accent="bg-orange-500/15 text-orange-400"
+            accent="bg-orange-50 text-orange-600"
           />
         </div>
       </section>
@@ -258,79 +257,79 @@ export default function OperationsHeadDashboard() {
         <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">
           Store Comparison
         </h2>
-        <div className="overflow-x-auto rounded-xl border border-gray-700">
+        <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-700 bg-gray-800/60">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wide">
+              <tr className="border-b border-gray-200 bg-gray-50">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Store
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Today Sales
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   MTD Sales
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Low Stock SKUs
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   B2B Allocated Picks ¹
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-700/60">
+            <tbody className="divide-y divide-gray-100">
               {storeStats.map(({ store, todaySales, mtdSales, lowStockItems, allocatedCount }) => (
                 <tr
                   key={store.id}
-                  className="hover:bg-gray-700/30 transition-colors bg-gray-800"
+                  className="bg-white hover:bg-gray-50 transition-colors"
                 >
                   <td className="px-4 py-3">
-                    <p className="font-medium text-white">
+                    <p className="font-medium text-gray-900">
                       {store.name.replace('Bharat Agri Store – ', '')}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-400">
                       {store.code} · {store.address.state}
                     </p>
                   </td>
-                  <td className="px-4 py-3 text-right font-mono text-white">
+                  <td className="px-4 py-3 text-right font-mono text-gray-900">
                     {todaySales > 0 ? (
                       shortRupees(todaySales)
                     ) : (
-                      <span className="text-gray-600">—</span>
+                      <span className="text-gray-300">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right font-mono text-white">
+                  <td className="px-4 py-3 text-right font-mono text-gray-900">
                     {mtdSales > 0 ? (
                       shortRupees(mtdSales)
                     ) : (
-                      <span className="text-gray-600">—</span>
+                      <span className="text-gray-300">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {lowStockItems > 0 ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-semibold text-red-400">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600">
                         <AlertTriangle size={10} />
                         {lowStockItems}
                       </span>
                     ) : (
-                      <span className="text-xs text-emerald-500">OK</span>
+                      <span className="text-xs text-emerald-600">OK</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {allocatedCount > 0 ? (
-                      <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-400">
+                      <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-600">
                         {allocatedCount}
                       </span>
                     ) : (
-                      <span className="text-xs text-gray-600">0</span>
+                      <span className="text-xs text-gray-400">0</span>
                     )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <p className="px-4 py-2 text-xs text-gray-600 border-t border-gray-700/60 bg-gray-800">
+          <p className="px-4 py-2 text-xs text-gray-400 border-t border-gray-100 bg-gray-50">
             ¹ All B2B fulfilment is centralised at Nagpur Warehouse (wh-ngp-001). Allocated count is platform-wide.
           </p>
         </div>
@@ -342,38 +341,38 @@ export default function OperationsHeadDashboard() {
         {/* Near Expiry Stock */}
         <section>
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <AlertTriangle size={14} className="text-amber-400" />
+            <AlertTriangle size={14} className="text-amber-500" />
             Near Expiry Stock
-            <span className="ml-auto font-bold text-amber-400">{nearExpiryItems.length}</span>
+            <span className="ml-auto font-bold text-amber-500">{nearExpiryItems.length}</span>
           </h2>
-          <div className="rounded-xl border border-gray-700 overflow-hidden">
+          <div className="rounded-xl border border-gray-200 border-l-4 border-l-amber-400 overflow-hidden shadow-sm">
             {nearExpiryItems.length === 0 ? (
-              <div className="p-6 text-center text-gray-500 text-sm bg-gray-800">
+              <div className="p-6 text-center text-gray-400 text-sm bg-white">
                 No batches expiring within 30 days.
               </div>
             ) : (
-              <ul className="divide-y divide-gray-700/60">
+              <ul className="divide-y divide-gray-100">
                 {nearExpiryItems.map(({ batch, productName, location, daysLeft }) => (
                   <li
                     key={batch.id}
-                    className="flex items-start gap-3 px-4 py-3 bg-gray-800 hover:bg-gray-700/30 transition-colors"
+                    className="flex items-start gap-3 px-4 py-3 bg-white hover:bg-gray-50 transition-colors"
                   >
                     <div
                       className={`mt-1.5 flex-shrink-0 rounded-full w-2 h-2 ${daysLeft <= 15 ? 'bg-red-500' : 'bg-amber-400'}`}
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-white truncate">{productName}</p>
+                      <p className="text-sm font-medium text-gray-900 truncate">{productName}</p>
                       <p className="text-xs text-gray-400">
                         {batch.batchNo} · {location}
                       </p>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p
-                        className={`text-sm font-bold ${daysLeft <= 15 ? 'text-red-400' : 'text-amber-400'}`}
+                        className={`text-sm font-bold ${daysLeft <= 15 ? 'text-red-500' : 'text-amber-500'}`}
                       >
                         {daysLeft}d
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-400">
                         {(batch.currentQty - batch.reservedQty).toLocaleString('en-IN')} units
                       </p>
                     </div>
@@ -387,39 +386,39 @@ export default function OperationsHeadDashboard() {
         {/* Pending Actions */}
         <section>
           <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <CheckCircle2 size={14} className="text-emerald-400" />
+            <CheckCircle2 size={14} className="text-blue-500" />
             Pending Actions
           </h2>
-          <div className="rounded-xl border border-gray-700 overflow-hidden divide-y divide-gray-700/60">
+          <div className="rounded-xl border border-gray-200 border-l-4 border-l-blue-400 overflow-hidden divide-y divide-gray-100 shadow-sm">
 
             {/* B2B orders needing approval */}
-            <div className="bg-gray-800">
-              <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+            <div className="bg-white">
+              <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 B2B Orders — Awaiting Approval
               </p>
               {pendingB2BOrders.length === 0 ? (
-                <p className="px-4 pb-3 text-sm text-gray-600">All clear.</p>
+                <p className="px-4 pb-3 text-sm text-gray-400">All clear.</p>
               ) : (
                 <ul className="pb-1">
                   {pendingB2BOrders.map((o) => (
                     <li
                       key={o.id}
-                      className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-gray-700/30 transition-colors"
+                      className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors"
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-white">{o.orderNo}</p>
+                        <p className="text-sm font-medium text-gray-900">{o.orderNo}</p>
                         <p className="text-xs text-gray-400">
                           {o.status === 'UnderReview' ? 'Under Review' : 'Submitted'} ·{' '}
                           Dispatch by {o.dispatchByDate ?? 'TBD'}
                         </p>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-sm font-bold text-white">{shortRupees(o.totalAmt)}</p>
+                        <p className="text-sm font-bold text-gray-900">{shortRupees(o.totalAmt)}</p>
                         <span
                           className={`text-xs font-medium px-1.5 py-0.5 rounded ${
                             o.status === 'UnderReview'
-                              ? 'bg-amber-500/15 text-amber-400'
-                              : 'bg-blue-500/15 text-blue-400'
+                              ? 'bg-amber-50 text-amber-600'
+                              : 'bg-blue-50 text-blue-600'
                           }`}
                         >
                           {o.status}
@@ -432,26 +431,26 @@ export default function OperationsHeadDashboard() {
             </div>
 
             {/* Overdue B2B invoices */}
-            <div className="bg-gray-800">
-              <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+            <div className="bg-white">
+              <p className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 Overdue B2B Invoices (&gt;30 days unpaid)
               </p>
               {overdueInvoices.length === 0 ? (
-                <p className="px-4 pb-3 text-sm text-gray-600">No overdue invoices.</p>
+                <p className="px-4 pb-3 text-sm text-gray-400">No overdue invoices.</p>
               ) : (
                 <ul className="pb-1">
                   {overdueInvoices.map((o) => (
                     <li
                       key={o.id}
-                      className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-gray-700/30 transition-colors"
+                      className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors"
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-white">{o.orderNo}</p>
+                        <p className="text-sm font-medium text-gray-900">{o.orderNo}</p>
                         <p className="text-xs text-gray-400">
                           Invoiced · Created {o.createdAt.slice(0, 10)}
                         </p>
                       </div>
-                      <p className="text-sm font-bold text-red-400 flex-shrink-0">
+                      <p className="text-sm font-bold text-red-500 flex-shrink-0">
                         {shortRupees(o.totalAmt)}
                       </p>
                     </li>
@@ -461,19 +460,19 @@ export default function OperationsHeadDashboard() {
             </div>
 
             {/* TA/DA claims — placeholder until backend */}
-            <div className="bg-gray-800 px-4 py-3">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+            <div className="bg-white px-4 py-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                 TA / DA Claims Pending
               </p>
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-gray-500">
                   Field agent travel reimbursements awaiting approval
                 </p>
-                <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/15 px-2.5 py-1 text-xs font-bold text-purple-400">
+                <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-2.5 py-1 text-xs font-bold text-purple-600">
                   2 pending
                 </span>
               </div>
-              <p className="mt-1 text-xs text-gray-600">
+              <p className="mt-1 text-xs text-gray-400">
                 TA/DA module pending — claims visible once backend is connected.
               </p>
             </div>

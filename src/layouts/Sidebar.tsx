@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingCart, PackageSearch, Leaf, Users,
-  Ticket, Map, Briefcase, FilePlus, Star, Wallet, SlidersHorizontal,
+  Ticket, Map, Briefcase, Star, Wallet, SlidersHorizontal,
   BarChart3, Activity, Settings, Sprout, Store, Megaphone,
-  Building2, BookOpen, FileMinus, CircleDollarSign,
+  Building2, BookOpen, FileMinus, CircleDollarSign, ChevronUp,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { NavItem, UserRole } from '../types';
@@ -31,7 +32,6 @@ const NAV_ITEMS: NavItem[] = [
 
   // ── B2B / Retailer ────────────────────────────────────────────────────────
   { label: 'B2B Orders',        path: '/b2b-orders',      icon: Briefcase,         roles: ['BDM', 'B2BSalesExecutive', 'WarehouseManager'] },
-  { label: 'New B2B Order',     path: '/b2b-new',         icon: FilePlus,          roles: ['BDM', 'B2BSalesExecutive'] },
   { label: 'Retailer Accounts', path: '/retailers',       icon: Building2,         roles: ['BDM', 'B2BSalesExecutive'] },
   { label: 'Catalogue',         path: '/products',        icon: Leaf,              roles: ['B2BSalesExecutive', 'WarehouseManager'] },
 
@@ -41,7 +41,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'B2B Receivables',   path: '/b2b-receivables', icon: CircleDollarSign,  roles: ['Finance'] },
 
   // ── Platform-wide only (Admin / SuperAdmin / OperationsHead) ──────────────
-  { label: 'Ops Dashboard',     path: '/analytics',       icon: Activity,          roles: [] },
+  { label: 'Operations Dashboard', path: '/analytics',     icon: Activity,          roles: [] },
   { label: 'Tier Management',   path: '/tier-management', icon: SlidersHorizontal, roles: [] },
   { label: 'Settings',          path: '/settings',        icon: Settings,          roles: [] },
 ];
@@ -61,6 +61,7 @@ const ROLE_COLORS: Record<UserRole, string> = {
 
 export default function Sidebar() {
   const { currentUser, setCurrentUser, allUsers } = useAuth();
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (item.roles === null) return true;
@@ -108,30 +109,52 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Dev: Switch Role */}
-      <div className="px-3 pt-3 pb-2 border-t border-gray-700/60 flex-shrink-0">
-        <p className="text-[9px] text-gray-600 uppercase tracking-widest font-semibold mb-1.5 px-1">
-          Dev · Switch Role
-        </p>
-        <select
-          value={currentUser.id}
-          onChange={(e) => {
-            const found = allUsers.find((u) => u.id === e.target.value);
-            if (found) setCurrentUser(found);
-          }}
-          className="w-full bg-gray-800 border border-gray-700 text-gray-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-emerald-500 cursor-pointer"
-        >
-          {allUsers.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.name} · {u.role}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* User card — click to open role switcher */}
+      <div className="relative flex-shrink-0">
+        {/* Upward popover */}
+        {popoverOpen && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setPopoverOpen(false)} />
+            <div className="absolute bottom-full left-0 right-0 mb-1 bg-white rounded-xl shadow-xl border border-gray-200 z-20 py-1 overflow-hidden mx-2">
+              <p className="text-[10px] text-gray-400 uppercase tracking-widest font-semibold px-3 py-2">
+                Switch Role
+              </p>
+              {allUsers.map((user) => (
+                <button
+                  key={user.id}
+                  onClick={() => {
+                    setCurrentUser(user);
+                    setPopoverOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 transition-colors ${
+                    user.id === currentUser.id ? 'bg-emerald-50' : ''
+                  }`}
+                >
+                  <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-xs font-semibold flex-shrink-0">
+                    {user.name
+                      .split(' ')
+                      .map((n) => n[0])
+                      .slice(0, 2)
+                      .join('')}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-gray-800 font-medium truncate text-xs">{user.name}</p>
+                    <p className="text-gray-500 text-[11px]">{user.role}</p>
+                  </div>
+                  {user.id === currentUser.id && (
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
-      {/* User footer */}
-      <div className="px-4 py-3 border-t border-gray-700/60 flex-shrink-0">
-        <div className="flex items-center gap-3">
+        {/* Trigger button */}
+        <button
+          onClick={() => setPopoverOpen((v) => !v)}
+          className="w-full px-4 py-3 border-t border-gray-700/60 flex items-center gap-3 hover:bg-gray-800 transition-colors text-left"
+        >
           <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-gray-300 text-sm font-semibold flex-shrink-0">
             {currentUser.name
               .split(' ')
@@ -139,7 +162,7 @@ export default function Sidebar() {
               .slice(0, 2)
               .join('')}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-gray-200 text-xs font-semibold truncate">{currentUser.name}</p>
             <span
               className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${ROLE_COLORS[currentUser.role]}`}
@@ -147,7 +170,11 @@ export default function Sidebar() {
               {currentUser.role}
             </span>
           </div>
-        </div>
+          <ChevronUp
+            size={13}
+            className={`text-gray-500 flex-shrink-0 transition-transform duration-150 ${popoverOpen ? '' : 'rotate-180'}`}
+          />
+        </button>
       </div>
     </aside>
   );
