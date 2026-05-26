@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingCart, PackageSearch, Leaf, Users,
   Ticket, Map, Briefcase, Star, Wallet, SlidersHorizontal,
@@ -18,7 +18,7 @@ const NAV_ITEMS: NavItem[] = [
 
   // ── Store Ops ─────────────────────────────────────────────────────────────
   { label: 'POS',               path: '/pos',             icon: ShoppingCart,      roles: ['StoreIncharge', 'Cashier'] },
-  { label: 'Inventory',         path: '/inventory',       icon: PackageSearch,     roles: ['StoreIncharge', 'WarehouseManager'] },
+  { label: 'Inventory',         path: '/inventory',       icon: PackageSearch,     roles: ['StoreIncharge', 'WarehouseManager'],   activeFor: ['/inventory', '/grn'] },
   { label: 'Farmers',           path: '/farmers',         icon: Users,             roles: ['StoreIncharge', 'BDM', 'B2BSalesExecutive'] },
   { label: 'Coupons',           path: '/coupons',         icon: Ticket,            roles: ['StoreIncharge', 'Finance'] },
   { label: 'Daily Bookkeeping', path: '/bookkeeping',     icon: BookOpen,          roles: ['StoreIncharge', 'Finance'] },
@@ -31,7 +31,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Loyalty Dashboard', path: '/loyalty',         icon: Star,              roles: ['BDM', 'Finance'] },
 
   // ── B2B / Retailer ────────────────────────────────────────────────────────
-  { label: 'B2B Orders',        path: '/b2b-orders',      icon: Briefcase,         roles: ['BDM', 'B2BSalesExecutive', 'WarehouseManager'] },
+  { label: 'B2B Orders',        path: '/b2b-orders',      icon: Briefcase,         roles: ['BDM', 'B2BSalesExecutive', 'WarehouseManager'], activeFor: ['/b2b-orders', '/b2b-new'] },
   { label: 'Retailer Accounts', path: '/retailers',       icon: Building2,         roles: ['BDM', 'B2BSalesExecutive'] },
   { label: 'Catalogue',         path: '/products',        icon: Leaf,              roles: ['B2BSalesExecutive', 'WarehouseManager'] },
 
@@ -59,9 +59,20 @@ const ROLE_COLORS: Record<UserRole, string> = {
   Finance:           'bg-pink-500/20 text-pink-300',
 };
 
+// Returns true when `pathname` should be considered active for the given nav item.
+// Default: prefix-match on item.path (covers /:id child routes automatically).
+// If item.activeFor is set, each entry is checked as an exact match OR a prefix
+// (e.g. '/b2b-orders' matches '/b2b-orders/42'). Dashboard ('/') is always exact.
+function isNavActive(item: NavItem, pathname: string): boolean {
+  if (item.path === '/') return pathname === '/';
+  const patterns = item.activeFor ?? [item.path];
+  return patterns.some(p => pathname === p || pathname.startsWith(p + '/'));
+}
+
 export default function Sidebar() {
   const { currentUser, setCurrentUser, allUsers } = useAuth();
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const location = useLocation();
 
   const visibleItems = NAV_ITEMS.filter((item) => {
     if (item.roles === null) return true;
@@ -92,11 +103,10 @@ export default function Sidebar() {
             <NavLink
               key={item.path}
               to={item.path}
-              end={item.path === '/'}
-              className={({ isActive }) =>
+              className={
                 [
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150',
-                  isActive
+                  isNavActive(item, location.pathname)
                     ? 'bg-emerald-600 text-white shadow-sm'
                     : 'text-gray-400 hover:bg-gray-800 hover:text-gray-100',
                 ].join(' ')

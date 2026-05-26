@@ -7,7 +7,7 @@ import DashboardPage from './modules/dashboard/DashboardPage';
 import POSScreen from './modules/m03-pos/POSScreen';
 import InventoryPage from './modules/m04-inventory/InventoryPage';
 import ProductsPage from './modules/m02-catalogue/ProductsPage';
-import FarmersPage from './modules/m05-farmers/FarmersPage';
+import CRMPage from './modules/m06-crm/CRMPage';
 import CouponsPage from './modules/m06-coupons/CouponsPage';
 import FieldForcePage from './modules/m07-field-force/FieldForcePage';
 import B2BOrderList from './modules/m13-b2b/B2BOrderList';
@@ -34,7 +34,7 @@ export default function App() {
             {/* Store Ops */}
             <Route path="pos"             element={<POSScreen />} />
             <Route path="inventory"       element={<InventoryPage />} />
-            <Route path="farmers"         element={<FarmersPage />} />
+            <Route path="farmers"         element={<CRMPage />} />
             <Route path="coupons"         element={<CouponsPage />} />
 
             {/* Catalogue */}

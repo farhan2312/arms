@@ -132,4 +132,6 @@ export interface NavItem {
   path: string;
   icon: ComponentType<{ className?: string; size?: number }>;
   roles: UserRole[] | null; // null = visible to all roles
+  /** Extra path prefixes that should also trigger this item's active state */
+  activeFor?: string[];
 }
