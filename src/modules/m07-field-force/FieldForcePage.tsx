@@ -1,0 +1,147 @@
+import { useState } from 'react';
+import { Search, Plus, Phone, MapPin, Target } from 'lucide-react';
+import PageHeader from '../../components/ui/PageHeader';
+import Badge, { statusVariant } from '../../components/ui/Badge';
+import type { FieldAgent } from '../../types';
+
+const mockAgents: FieldAgent[] = [
+  { id: 'a001', name: 'Arun Kale', phone: '9871234560', employeeCode: 'FF-MH-001', territory: 'Akola–Washim Belt', district: 'Akola', state: 'Maharashtra', managerId: 'u002', managerName: 'Priya Sharma', targetFarmers: 150, visitedFarmers: 132, salesMTD: 284500, joiningDate: '2022-06-01', status: 'Active' },
+  { id: 'a002', name: 'Deepak Salve', phone: '9760001234', employeeCode: 'FF-MH-002', territory: 'Buldhana–Khamgaon', district: 'Buldhana', state: 'Maharashtra', managerId: 'u002', managerName: 'Priya Sharma', targetFarmers: 120, visitedFarmers: 98, salesMTD: 198000, joiningDate: '2023-01-15', status: 'Active' },
+  { id: 'a003', name: 'Savita Aware', phone: '9651239870', employeeCode: 'FF-MH-003', territory: 'Amravati South', district: 'Amravati', state: 'Maharashtra', managerId: 'u002', managerName: 'Priya Sharma', targetFarmers: 100, visitedFarmers: 72, salesMTD: 145000, joiningDate: '2023-08-20', status: 'On Leave' },
+  { id: 'a004', name: 'Nagesh Rao', phone: '9540987651', employeeCode: 'FF-TS-001', territory: 'Warangal Rural', district: 'Warangal', state: 'Telangana', managerId: 'u004', managerName: 'Kavitha Reddy', targetFarmers: 140, visitedFarmers: 140, salesMTD: 362000, joiningDate: '2021-11-10', status: 'Active' },
+  { id: 'a005', name: 'Sundaram Pillai', phone: '9431265740', employeeCode: 'FF-TN-001', territory: 'Thanjavur Delta', district: 'Thanjavur', state: 'Tamil Nadu', managerId: 'u003', managerName: 'Anand Deshmukh', targetFarmers: 90, visitedFarmers: 45, salesMTD: 88000, joiningDate: '2024-03-01', status: 'Active' },
+  { id: 'a006', name: 'Rekha Biradar', phone: '9320098761', employeeCode: 'FF-KA-001', territory: 'Bidar–Gulbarga', district: 'Bidar', state: 'Karnataka', managerId: 'u003', managerName: 'Anand Deshmukh', targetFarmers: 110, visitedFarmers: 0, salesMTD: 0, joiningDate: '2023-06-01', status: 'Inactive' },
+];
+
+export default function FieldForcePage() {
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+
+  const filtered = mockAgents.filter((a) => {
+    const matchSearch =
+      a.name.toLowerCase().includes(search.toLowerCase()) ||
+      a.employeeCode.toLowerCase().includes(search.toLowerCase()) ||
+      a.territory.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter === 'All' || a.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  const totalSalesMTD = mockAgents.reduce((s, a) => s + a.salesMTD, 0);
+  const avgAchievement = Math.round(
+    (mockAgents.reduce((s, a) => s + (a.visitedFarmers / a.targetFarmers) * 100, 0) / mockAgents.length),
+  );
+
+  return (
+    <div className="p-6">
+      <PageHeader
+        title="Field Force"
+        subtitle="Territory-wise agent performance and coverage"
+        actions={
+          <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
+            <Plus size={15} />
+            Add Agent
+          </button>
+        }
+      />
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Active Agents</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">
+            {mockAgents.filter((a) => a.status === 'Active').length}
+            <span className="text-sm font-normal text-gray-400"> / {mockAgents.length}</span>
+          </p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Total Sales MTD</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">₹{(totalSalesMTD / 100000).toFixed(1)}L</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Avg. Farmer Coverage</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{avgAchievement}%</p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3 mb-5">
+        <div className="relative flex-1 min-w-60">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name, code or territory..."
+            className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+          />
+        </div>
+        {['All', 'Active', 'On Leave', 'Inactive'].map((s) => (
+          <button
+            key={s}
+            onClick={() => setStatusFilter(s)}
+            className={`px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
+              statusFilter === s
+                ? 'bg-emerald-600 text-white border-emerald-600'
+                : 'border-gray-200 text-gray-600 hover:bg-gray-50 bg-white'
+            }`}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {filtered.map((agent) => {
+          const coverage = Math.round((agent.visitedFarmers / agent.targetFarmers) * 100);
+          return (
+            <div key={agent.id} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-sm transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-sm flex-shrink-0">
+                    {agent.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 text-sm">{agent.name}</p>
+                    <p className="text-[11px] text-gray-400 font-mono">{agent.employeeCode}</p>
+                  </div>
+                </div>
+                <Badge label={agent.status} variant={statusVariant(agent.status)} />
+              </div>
+
+              <div className="space-y-1.5 text-xs text-gray-500 mb-4">
+                <p className="flex items-center gap-1.5">
+                  <Phone size={11} className="text-gray-400" /> {agent.phone}
+                </p>
+                <p className="flex items-center gap-1.5">
+                  <MapPin size={11} className="text-gray-400" /> {agent.territory}, {agent.state}
+                </p>
+                <p className="flex items-center gap-1.5">
+                  <Target size={11} className="text-gray-400" /> Reports to {agent.managerName}
+                </p>
+              </div>
+
+              {/* Coverage */}
+              <div className="mb-3">
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-gray-500">Farmer Coverage</span>
+                  <span className="font-semibold text-gray-700">{agent.visitedFarmers} / {agent.targetFarmers}</span>
+                </div>
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${coverage >= 90 ? 'bg-emerald-500' : coverage >= 60 ? 'bg-yellow-400' : 'bg-red-400'}`}
+                    style={{ width: `${Math.min(coverage, 100)}%` }}
+                  />
+                </div>
+                <p className="text-right text-[11px] text-gray-400 mt-0.5">{coverage}%</p>
+              </div>
+
+              <div className="pt-3 border-t border-gray-100 text-xs">
+                <span className="text-gray-500">Sales MTD: </span>
+                <span className="font-bold text-gray-800">₹{agent.salesMTD.toLocaleString('en-IN')}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
