@@ -1,111 +1,77 @@
 import { NavLink } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  ShoppingCart,
-  PackageSearch,
-  Leaf,
-  Users,
-  Ticket,
-  Map,
-  Briefcase,
-  Star,
-  BarChart3,
-  Activity,
-  Settings,
-  Sprout,
+  LayoutDashboard, ShoppingCart, PackageSearch, Leaf, Users,
+  Ticket, Map, Briefcase, FilePlus, Star, Wallet, SlidersHorizontal,
+  BarChart3, Activity, Settings, Sprout, Store, Megaphone,
+  Building2, BookOpen, FileMinus, CircleDollarSign,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { NavItem, UserRole } from '../types';
 
+// Roles that bypass per-item role restrictions and see all nav items
+const PLATFORM_WIDE_ROLES: UserRole[] = ['OperationsHead', 'Admin', 'SuperAdmin'];
+
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', path: '/', icon: LayoutDashboard, roles: null },
-  { label: 'POS', path: '/pos', icon: ShoppingCart, roles: ['StoreIncharge', 'Admin'] },
-  {
-    label: 'Inventory',
-    path: '/inventory',
-    icon: PackageSearch,
-    roles: ['StoreIncharge', 'OperationsHead', 'WarehouseManager', 'Admin'],
-  },
-  {
-    label: 'Products',
-    path: '/products',
-    icon: Leaf,
-    roles: ['StoreIncharge', 'OperationsHead', 'WarehouseManager', 'Admin'],
-  },
-  {
-    label: 'Farmers',
-    path: '/farmers',
-    icon: Users,
-    roles: ['StoreIncharge', 'BDM', 'B2BSalesExecutive', 'Admin'],
-  },
-  {
-    label: 'Coupons',
-    path: '/coupons',
-    icon: Ticket,
-    roles: ['StoreIncharge', 'Finance', 'Admin'],
-  },
-  {
-    label: 'Field Force',
-    path: '/field-force',
-    icon: Map,
-    roles: ['BDM', 'OperationsHead', 'Admin'],
-  },
-  {
-    label: 'B2B Orders',
-    path: '/b2b-orders',
-    icon: Briefcase,
-    roles: ['BDM', 'B2BSalesExecutive', 'Admin'],
-  },
-  {
-    label: 'Loyalty',
-    path: '/loyalty',
-    icon: Star,
-    roles: ['Finance', 'Admin'],
-  },
-  {
-    label: 'Reports',
-    path: '/reports',
-    icon: BarChart3,
-    roles: ['OperationsHead', 'Finance', 'Admin'],
-  },
-  {
-    label: 'Ops Dashboard',
-    path: '/analytics',
-    icon: Activity,
-    roles: ['OperationsHead', 'SuperAdmin', 'Admin'],
-  },
-  {
-    label: 'Settings',
-    path: '/settings',
-    icon: Settings,
-    roles: ['Admin'],
-  },
+  // ── Always visible ───────────────────────────────────────────────────────
+  { label: 'Dashboard',         path: '/',                icon: LayoutDashboard,   roles: null },
+
+  // ── Store Ops ─────────────────────────────────────────────────────────────
+  { label: 'POS',               path: '/pos',             icon: ShoppingCart,      roles: ['StoreIncharge', 'Cashier'] },
+  { label: 'Inventory',         path: '/inventory',       icon: PackageSearch,     roles: ['StoreIncharge', 'WarehouseManager'] },
+  { label: 'Farmers',           path: '/farmers',         icon: Users,             roles: ['StoreIncharge', 'BDM', 'B2BSalesExecutive'] },
+  { label: 'Coupons',           path: '/coupons',         icon: Ticket,            roles: ['StoreIncharge', 'Finance'] },
+  { label: 'Daily Bookkeeping', path: '/bookkeeping',     icon: BookOpen,          roles: ['StoreIncharge', 'Finance'] },
+  { label: 'Loyalty Lookup',    path: '/wallet-lookup',   icon: Wallet,            roles: ['StoreIncharge'] },
+
+  // ── BDM / Field ───────────────────────────────────────────────────────────
+  { label: 'Stores',            path: '/stores',          icon: Store,             roles: ['BDM'] },
+  { label: 'Outreach',          path: '/outreach',        icon: Megaphone,         roles: ['BDM'] },
+  { label: 'Field Force',       path: '/field-force',     icon: Map,               roles: ['BDM', 'B2BSalesExecutive', 'FieldAgent'] },
+  { label: 'Loyalty Dashboard', path: '/loyalty',         icon: Star,              roles: ['BDM', 'Finance'] },
+
+  // ── B2B / Retailer ────────────────────────────────────────────────────────
+  { label: 'B2B Orders',        path: '/b2b-orders',      icon: Briefcase,         roles: ['BDM', 'B2BSalesExecutive', 'WarehouseManager'] },
+  { label: 'New B2B Order',     path: '/b2b-new',         icon: FilePlus,          roles: ['BDM', 'B2BSalesExecutive'] },
+  { label: 'Retailer Accounts', path: '/retailers',       icon: Building2,         roles: ['BDM', 'B2BSalesExecutive'] },
+  { label: 'Catalogue',         path: '/products',        icon: Leaf,              roles: ['B2BSalesExecutive', 'WarehouseManager'] },
+
+  // ── Finance ───────────────────────────────────────────────────────────────
+  { label: 'Reports',           path: '/reports',         icon: BarChart3,         roles: ['Finance'] },
+  { label: 'Credit Notes',      path: '/credit-notes',    icon: FileMinus,         roles: ['Finance'] },
+  { label: 'B2B Receivables',   path: '/b2b-receivables', icon: CircleDollarSign,  roles: ['Finance'] },
+
+  // ── Platform-wide only (Admin / SuperAdmin / OperationsHead) ──────────────
+  { label: 'Ops Dashboard',     path: '/analytics',       icon: Activity,          roles: [] },
+  { label: 'Tier Management',   path: '/tier-management', icon: SlidersHorizontal, roles: [] },
+  { label: 'Settings',          path: '/settings',        icon: Settings,          roles: [] },
 ];
 
 const ROLE_COLORS: Record<UserRole, string> = {
-  SuperAdmin: 'bg-red-500/20 text-red-300',
-  Admin: 'bg-emerald-500/20 text-emerald-300',
-  StoreIncharge: 'bg-blue-500/20 text-blue-300',
-  Cashier: 'bg-blue-500/20 text-blue-300',
-  BDM: 'bg-purple-500/20 text-purple-300',
-  FieldAgent: 'bg-green-500/20 text-green-300',
+  SuperAdmin:        'bg-red-500/20 text-red-300',
+  Admin:             'bg-emerald-500/20 text-emerald-300',
+  StoreIncharge:     'bg-blue-500/20 text-blue-300',
+  Cashier:           'bg-sky-500/20 text-sky-300',
+  BDM:               'bg-purple-500/20 text-purple-300',
+  FieldAgent:        'bg-green-500/20 text-green-300',
   B2BSalesExecutive: 'bg-teal-500/20 text-teal-300',
-  OperationsHead: 'bg-orange-500/20 text-orange-300',
-  WarehouseManager: 'bg-yellow-500/20 text-yellow-300',
-  Finance: 'bg-pink-500/20 text-pink-300',
+  OperationsHead:    'bg-orange-500/20 text-orange-300',
+  WarehouseManager:  'bg-yellow-500/20 text-yellow-300',
+  Finance:           'bg-pink-500/20 text-pink-300',
 };
 
 export default function Sidebar() {
-  const { currentUser } = useAuth();
+  const { currentUser, setCurrentUser, allUsers } = useAuth();
 
-  const visibleItems = NAV_ITEMS.filter(
-    (item) => item.roles === null || item.roles.includes(currentUser.role),
-  );
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    if (item.roles === null) return true;
+    if (PLATFORM_WIDE_ROLES.includes(currentUser.role)) return true;
+    return item.roles.includes(currentUser.role);
+  });
 
   return (
     <aside className="w-64 flex-shrink-0 bg-gray-900 h-screen flex flex-col select-none">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-gray-700/60 flex items-center gap-3">
+      <div className="px-5 py-5 border-b border-gray-700/60 flex items-center gap-3 flex-shrink-0">
         <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center flex-shrink-0">
           <Sprout size={20} className="text-white" />
         </div>
@@ -118,7 +84,7 @@ export default function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 scrollbar-thin space-y-0.5">
+      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5 scrollbar-thin">
         {visibleItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -142,8 +108,29 @@ export default function Sidebar() {
         })}
       </nav>
 
+      {/* Dev: Switch Role */}
+      <div className="px-3 pt-3 pb-2 border-t border-gray-700/60 flex-shrink-0">
+        <p className="text-[9px] text-gray-600 uppercase tracking-widest font-semibold mb-1.5 px-1">
+          Dev · Switch Role
+        </p>
+        <select
+          value={currentUser.id}
+          onChange={(e) => {
+            const found = allUsers.find((u) => u.id === e.target.value);
+            if (found) setCurrentUser(found);
+          }}
+          className="w-full bg-gray-800 border border-gray-700 text-gray-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-emerald-500 cursor-pointer"
+        >
+          {allUsers.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.name} · {u.role}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* User footer */}
-      <div className="px-4 py-4 border-t border-gray-700/60">
+      <div className="px-4 py-3 border-t border-gray-700/60 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-gray-300 text-sm font-semibold flex-shrink-0">
             {currentUser.name

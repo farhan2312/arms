@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { Search, Plus, Phone, MapPin, Target } from 'lucide-react';
+import { Search, Plus, Phone, MapPin, Target, Route, Users, ReceiptText } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
 import Badge, { statusVariant } from '../../components/ui/Badge';
 import type { FieldAgent } from '../../types';
+import JourneyLog from '../m11-fieldforce/JourneyLog';
+import MeetingLog from '../m11-fieldforce/MeetingLog';
+import TADASummary from '../m11-fieldforce/TADASummary';
 
 const mockAgents: FieldAgent[] = [
   { id: 'a001', name: 'Arun Kale', phone: '9871234560', employeeCode: 'FF-MH-001', territory: 'Akola–Washim Belt', district: 'Akola', state: 'Maharashtra', managerId: 'u002', managerName: 'Priya Sharma', targetFarmers: 150, visitedFarmers: 132, salesMTD: 284500, joiningDate: '2022-06-01', status: 'Active' },
@@ -13,7 +16,39 @@ const mockAgents: FieldAgent[] = [
   { id: 'a006', name: 'Rekha Biradar', phone: '9320098761', employeeCode: 'FF-KA-001', territory: 'Bidar–Gulbarga', district: 'Bidar', state: 'Karnataka', managerId: 'u003', managerName: 'Anand Deshmukh', targetFarmers: 110, visitedFarmers: 0, salesMTD: 0, joiningDate: '2023-06-01', status: 'Inactive' },
 ];
 
+type Tab = 'agents' | 'journeys' | 'meetings' | 'tada';
+
+const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
+  { id: 'agents',   label: 'Agents',       icon: Users },
+  { id: 'journeys', label: 'Journey Log',  icon: Route },
+  { id: 'meetings', label: 'Meeting Log',  icon: ClipboardListIcon },
+  { id: 'tada',     label: 'TA/DA Summary', icon: ReceiptText },
+];
+
+// thin wrapper so we can reference ClipboardList without another lucide import collision
+function ClipboardListIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={props.width ?? 16}
+      height={props.height ?? 16}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+      <path d="M12 11h4" /><path d="M12 16h4" /><path d="M8 11h.01" /><path d="M8 16h.01" />
+    </svg>
+  );
+}
+
 export default function FieldForcePage() {
+  const [activeTab, setActiveTab] = useState<Tab>('agents');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
@@ -35,113 +70,141 @@ export default function FieldForcePage() {
     <div className="p-6">
       <PageHeader
         title="Field Force"
-        subtitle="Territory-wise agent performance and coverage"
+        subtitle="Territory-wise agent performance, journeys and TA/DA"
         actions={
-          <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
-            <Plus size={15} />
-            Add Agent
-          </button>
+          activeTab === 'agents' ? (
+            <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
+              <Plus size={15} />
+              Add Agent
+            </button>
+          ) : undefined
         }
       />
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Active Agents</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">
-            {mockAgents.filter((a) => a.status === 'Active').length}
-            <span className="text-sm font-normal text-gray-400"> / {mockAgents.length}</span>
-          </p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Total Sales MTD</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">₹{(totalSalesMTD / 100000).toFixed(1)}L</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Avg. Farmer Coverage</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{avgAchievement}%</p>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-5">
-        <div className="relative flex-1 min-w-60">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, code or territory..."
-            className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-          />
-        </div>
-        {['All', 'Active', 'On Leave', 'Inactive'].map((s) => (
+      {/* Tab bar */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-6 w-fit">
+        {TABS.map(({ id, label, icon: Icon }) => (
           <button
-            key={s}
-            onClick={() => setStatusFilter(s)}
-            className={`px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
-              statusFilter === s
-                ? 'bg-emerald-600 text-white border-emerald-600'
-                : 'border-gray-200 text-gray-600 hover:bg-gray-50 bg-white'
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              activeTab === id
+                ? 'bg-white text-emerald-700 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            {s}
+            <Icon width={15} height={15} />
+            {label}
           </button>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filtered.map((agent) => {
-          const coverage = Math.round((agent.visitedFarmers / agent.targetFarmers) * 100);
-          return (
-            <div key={agent.id} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-sm transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-sm flex-shrink-0">
-                    {agent.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 text-sm">{agent.name}</p>
-                    <p className="text-[11px] text-gray-400 font-mono">{agent.employeeCode}</p>
-                  </div>
-                </div>
-                <Badge label={agent.status} variant={statusVariant(agent.status)} />
-              </div>
-
-              <div className="space-y-1.5 text-xs text-gray-500 mb-4">
-                <p className="flex items-center gap-1.5">
-                  <Phone size={11} className="text-gray-400" /> {agent.phone}
-                </p>
-                <p className="flex items-center gap-1.5">
-                  <MapPin size={11} className="text-gray-400" /> {agent.territory}, {agent.state}
-                </p>
-                <p className="flex items-center gap-1.5">
-                  <Target size={11} className="text-gray-400" /> Reports to {agent.managerName}
-                </p>
-              </div>
-
-              {/* Coverage */}
-              <div className="mb-3">
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-gray-500">Farmer Coverage</span>
-                  <span className="font-semibold text-gray-700">{agent.visitedFarmers} / {agent.targetFarmers}</span>
-                </div>
-                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${coverage >= 90 ? 'bg-emerald-500' : coverage >= 60 ? 'bg-yellow-400' : 'bg-red-400'}`}
-                    style={{ width: `${Math.min(coverage, 100)}%` }}
-                  />
-                </div>
-                <p className="text-right text-[11px] text-gray-400 mt-0.5">{coverage}%</p>
-              </div>
-
-              <div className="pt-3 border-t border-gray-100 text-xs">
-                <span className="text-gray-500">Sales MTD: </span>
-                <span className="font-bold text-gray-800">₹{agent.salesMTD.toLocaleString('en-IN')}</span>
-              </div>
+      {activeTab === 'agents' && (
+        <>
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Active Agents</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {mockAgents.filter((a) => a.status === 'Active').length}
+                <span className="text-sm font-normal text-gray-400"> / {mockAgents.length}</span>
+              </p>
             </div>
-          );
-        })}
-      </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Total Sales MTD</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">₹{(totalSalesMTD / 100000).toFixed(1)}L</p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Avg. Farmer Coverage</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{avgAchievement}%</p>
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-3 mb-5">
+            <div className="relative flex-1 min-w-60">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name, code or territory..."
+                className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+              />
+            </div>
+            {['All', 'Active', 'On Leave', 'Inactive'].map((s) => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
+                  statusFilter === s
+                    ? 'bg-emerald-600 text-white border-emerald-600'
+                    : 'border-gray-200 text-gray-600 hover:bg-gray-50 bg-white'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {filtered.map((agent) => {
+              const coverage = Math.round((agent.visitedFarmers / agent.targetFarmers) * 100);
+              return (
+                <div key={agent.id} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-sm transition-shadow">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-sm flex-shrink-0">
+                        {agent.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900 text-sm">{agent.name}</p>
+                        <p className="text-[11px] text-gray-400 font-mono">{agent.employeeCode}</p>
+                      </div>
+                    </div>
+                    <Badge label={agent.status} variant={statusVariant(agent.status)} />
+                  </div>
+
+                  <div className="space-y-1.5 text-xs text-gray-500 mb-4">
+                    <p className="flex items-center gap-1.5">
+                      <Phone size={11} className="text-gray-400" /> {agent.phone}
+                    </p>
+                    <p className="flex items-center gap-1.5">
+                      <MapPin size={11} className="text-gray-400" /> {agent.territory}, {agent.state}
+                    </p>
+                    <p className="flex items-center gap-1.5">
+                      <Target size={11} className="text-gray-400" /> Reports to {agent.managerName}
+                    </p>
+                  </div>
+
+                  {/* Coverage */}
+                  <div className="mb-3">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-gray-500">Farmer Coverage</span>
+                      <span className="font-semibold text-gray-700">{agent.visitedFarmers} / {agent.targetFarmers}</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${coverage >= 90 ? 'bg-emerald-500' : coverage >= 60 ? 'bg-yellow-400' : 'bg-red-400'}`}
+                        style={{ width: `${Math.min(coverage, 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-right text-[11px] text-gray-400 mt-0.5">{coverage}%</p>
+                  </div>
+
+                  <div className="pt-3 border-t border-gray-100 text-xs">
+                    <span className="text-gray-500">Sales MTD: </span>
+                    <span className="font-bold text-gray-800">₹{agent.salesMTD.toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {activeTab === 'journeys' && <JourneyLog />}
+      {activeTab === 'meetings' && <MeetingLog />}
+      {activeTab === 'tada'     && <TADASummary />}
     </div>
   );
 }
