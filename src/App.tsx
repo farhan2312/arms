@@ -16,7 +16,7 @@ import LoyaltyDashboard from './modules/m14-loyalty/LoyaltyDashboard';
 import FarmerWalletView from './modules/m14-loyalty/FarmerWalletView';
 import TierManagementPanel from './modules/m14-loyalty/TierManagementPanel';
 import ReportsPage from './modules/m10-reports/ReportsPage';
-import SettingsPage from './modules/m11-settings/SettingsPage';
+import SettingsPage from './modules/m01-settings/SettingsPage';
 import OperationsHeadDashboard from './modules/m12-analytics/OperationsHeadDashboard';
 import BookkeepingPage from './modules/m09-bookkeeping/BookkeepingPage';
 import ProcurementPage from './modules/m05-procurement/ProcurementPage';
