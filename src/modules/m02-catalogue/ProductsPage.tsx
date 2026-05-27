@@ -1,17 +1,23 @@
 import { useState } from 'react';
-import { Search, Plus, Pencil, ToggleLeft } from 'lucide-react';
+import { Search, Plus, Pencil, ToggleLeft, CheckCircle2 } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
 import Badge from '../../components/ui/Badge';
 import { mockProducts } from '../../data/mockProducts';
 import { mockProductStock } from '../../data/mockBatches';
+import type { Product } from '../../types/entities';
+import ProductForm from './ProductForm';
 
 const CATEGORIES = ['All', 'Seed', 'Fertiliser', 'Micronutrient', 'Pesticide'];
 
 export default function ProductsPage() {
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('All');
+  const [products, setProducts]       = useState<Product[]>(mockProducts);
+  const [search, setSearch]           = useState('');
+  const [category, setCategory]       = useState('All');
+  const [showForm, setShowForm]       = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
+  const [toast, setToast]             = useState<string | null>(null);
 
-  const filtered = mockProducts.filter((p) => {
+  const filtered = products.filter((p) => {
     const matchSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.sku.toLowerCase().includes(search.toLowerCase()) ||
@@ -20,12 +26,47 @@ export default function ProductsPage() {
     return matchSearch && matchCat;
   });
 
+  function openAdd() {
+    setEditingProduct(undefined);
+    setShowForm(true);
+  }
+
+  function openEdit(product: Product) {
+    setEditingProduct(product);
+    setShowForm(true);
+  }
+
+  function handleSave(saved: Product) {
+    if (editingProduct) {
+      setProducts(prev => prev.map(p => p.id === saved.id ? saved : p));
+      showToast('Product updated successfully');
+    } else {
+      setProducts(prev => [saved, ...prev]);
+      showToast('Product added successfully');
+    }
+    setShowForm(false);
+    setEditingProduct(undefined);
+  }
+
+  function handleClose() {
+    setShowForm(false);
+    setEditingProduct(undefined);
+  }
+
+  function toggleActive(product: Product) {
+    setProducts(prev =>
+      prev.map(p => p.id === product.id ? { ...p, isActive: !p.isActive, updatedAt: new Date().toISOString() } : p),
+    );
+  }
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  }
+
   const categoryBadge = (cat: string): 'green' | 'blue' | 'orange' | 'purple' | 'gray' => {
     const map: Record<string, 'green' | 'blue' | 'orange' | 'purple' | 'gray'> = {
-      Fertiliser: 'green',
-      Pesticide: 'orange',
-      Seed: 'blue',
-      Micronutrient: 'purple',
+      Fertiliser: 'green', Pesticide: 'orange', Seed: 'blue', Micronutrient: 'purple',
     };
     return map[cat] ?? 'gray';
   };
@@ -36,7 +77,10 @@ export default function ProductsPage() {
         title="Product Catalogue"
         subtitle="Manage agri-input SKUs, pricing and availability"
         actions={
-          <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
+          <button
+            onClick={openAdd}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors"
+          >
             <Plus size={15} />
             Add Product
           </button>
@@ -141,10 +185,18 @@ export default function ProductsPage() {
                   </td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-2 justify-end">
-                      <button className="text-gray-400 hover:text-gray-700 transition-colors">
+                      <button
+                        onClick={() => openEdit(p)}
+                        className="text-gray-400 hover:text-emerald-600 transition-colors"
+                        title="Edit product"
+                      >
                         <Pencil size={13} />
                       </button>
-                      <button className="text-gray-400 hover:text-gray-700 transition-colors">
+                      <button
+                        onClick={() => toggleActive(p)}
+                        className={`transition-colors ${p.isActive ? 'text-gray-400 hover:text-red-500' : 'text-gray-300 hover:text-emerald-600'}`}
+                        title={p.isActive ? 'Deactivate' : 'Activate'}
+                      >
                         <ToggleLeft size={14} />
                       </button>
                     </div>
@@ -152,9 +204,33 @@ export default function ProductsPage() {
                 </tr>
               );
             })}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={9} className="px-5 py-10 text-center text-sm text-gray-400">
+                  No products match the current filters.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+
+      {/* Slide-over form */}
+      {showForm && (
+        <ProductForm
+          product={editingProduct}
+          onSave={handleSave}
+          onClose={handleClose}
+        />
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 flex items-center gap-2.5 bg-gray-900 text-white text-sm font-medium px-5 py-3 rounded-xl shadow-2xl z-[100]">
+          <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0" />
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

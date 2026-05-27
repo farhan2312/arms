@@ -211,6 +211,17 @@ export interface Product {
 
   isActive: boolean;
 
+  /** Tier-specific B2B prices (optional — falls back to b2bPrice if absent). */
+  b2bPriceSilver?: number;
+  b2bPriceGold?: number;
+  b2bPricePlatinum?: number;
+
+  /** Category-specific agronomic metadata (seed traits, nutrient ratios, etc.). */
+  agronomicMeta?: Record<string, string | number>;
+
+  /** Recommended crop × growth-stage pairings for this product. */
+  cropMappings?: { crop: string; growthStage: string }[];
+
   /** ISO 8601 timestamp. */
   createdAt: string;
   updatedAt: string;
