@@ -2,7 +2,7 @@
 // Manages: farmers, outreachLogs, flaggedIds, farmerLanguages, selected farmer, form visibility
 
 import { useState } from 'react';
-import { Users, Megaphone } from 'lucide-react';
+import { Users, Megaphone, Wallet } from 'lucide-react';
 import { mockFarmers } from '../../data/mockFarmers';
 import { SEED_OUTREACH } from './OutreachLog';
 import type { OutreachEntry } from './OutreachLog';
@@ -10,13 +10,15 @@ import FarmerList from './FarmerList';
 import FarmerProfile from './FarmerProfile';
 import FarmerForm from './FarmerForm';
 import OutreachLog from './OutreachLog';
+import LoyaltyLookupTab from './LoyaltyLookupTab';
 import type { Farmer } from '../../types/entities';
 
-type CRMTab = 'farmers' | 'outreach';
+type CRMTab = 'farmers' | 'outreach' | 'loyalty';
 
 const TABS: { key: CRMTab; label: string; icon: React.ElementType }[] = [
-  { key: 'farmers',  label: 'Farmers',      icon: Users },
-  { key: 'outreach', label: 'Outreach Log', icon: Megaphone },
+  { key: 'farmers',  label: 'Farmers',        icon: Users    },
+  { key: 'outreach', label: 'Outreach Log',   icon: Megaphone },
+  { key: 'loyalty',  label: 'Loyalty Lookup', icon: Wallet   },
 ];
 
 export default function CRMPage() {
@@ -102,6 +104,7 @@ export default function CRMPage() {
               onAddLog={handleAddLog}
             />
           )}
+          {tab === 'loyalty' && <LoyaltyLookupTab />}
         </>
       )}
 

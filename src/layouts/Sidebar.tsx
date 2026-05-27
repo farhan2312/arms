@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingCart, PackageSearch, Leaf, Users,
-  Ticket, Map, Briefcase, Star, Wallet, SlidersHorizontal,
-  BarChart3, Activity, Settings, Sprout, Store, Megaphone,
+  Ticket, Map, Briefcase, Star, SlidersHorizontal,
+  BarChart3, Activity, Settings, Sprout, Store,
   Building2, BookOpen, FileMinus, CircleDollarSign, ChevronUp,
   ClipboardList, ShieldCheck,
 } from 'lucide-react';
@@ -20,16 +20,14 @@ const NAV_ITEMS: NavItem[] = [
   // ── Store Ops ─────────────────────────────────────────────────────────────
   { label: 'POS',               path: '/pos',             icon: ShoppingCart,      roles: ['StoreIncharge', 'Cashier'] },
   { label: 'Inventory',         path: '/inventory',       icon: PackageSearch,     roles: ['StoreIncharge', 'WarehouseManager'],   activeFor: ['/inventory', '/grn'] },
-  { label: 'Farmers',           path: '/farmers',         icon: Users,             roles: ['StoreIncharge', 'BDM', 'B2BSalesExecutive'] },
+  { label: 'Farmers',           path: '/farmers',         icon: Users,             roles: ['StoreIncharge', 'BDM', 'B2BSalesExecutive'], activeFor: ['/farmers', '/outreach', '/wallet-lookup'] },
   { label: 'Coupons',           path: '/coupons',         icon: Ticket,            roles: ['StoreIncharge', 'Finance'] },
   { label: 'Daily Bookkeeping', path: '/bookkeeping',     icon: BookOpen,          roles: ['StoreIncharge', 'Finance'] },
   { label: 'Compliance',        path: '/compliance',      icon: ShieldCheck,       roles: ['StoreIncharge', 'Finance'] },
   { label: 'Procurement',       path: '/procurement',     icon: ClipboardList,     roles: ['StoreIncharge', 'WarehouseManager', 'BDM', 'OperationsHead'] },
-  { label: 'Loyalty Lookup',    path: '/wallet-lookup',   icon: Wallet,            roles: ['StoreIncharge'] },
 
   // ── BDM / Field ───────────────────────────────────────────────────────────
   { label: 'Stores',            path: '/stores',          icon: Store,             roles: ['BDM'] },
-  { label: 'Outreach',          path: '/outreach',        icon: Megaphone,         roles: ['BDM'] },
   { label: 'Field Force',       path: '/field-force',     icon: Map,               roles: ['BDM', 'B2BSalesExecutive', 'FieldAgent'] },
   { label: 'Loyalty Dashboard', path: '/loyalty',         icon: Star,              roles: ['BDM', 'Finance'] },
 
