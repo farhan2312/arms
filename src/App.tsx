@@ -13,6 +13,7 @@ import FieldForcePage from './modules/m07-field-force/FieldForcePage';
 import B2BOrderList from './modules/m13-b2b/B2BOrderList';
 import B2BOrderForm from './modules/m13-b2b/B2BOrderForm';
 import RetailerAccounts from './modules/m13-b2b/RetailerAccounts';
+import B2BReceivables from './modules/m13-b2b/B2BReceivables';
 import LoyaltyDashboard from './modules/m14-loyalty/LoyaltyDashboard';
 import FarmerWalletView from './modules/m14-loyalty/FarmerWalletView';
 import TierManagementPanel from './modules/m14-loyalty/TierManagementPanel';
@@ -54,6 +55,7 @@ export default function App() {
             <Route path="b2b-orders"      element={<B2BOrderList />} />
             <Route path="b2b-new"         element={<B2BOrderForm />} />
             <Route path="retailers"        element={<RetailerAccounts />} />
+            <Route path="b2b-receivables" element={<B2BReceivables />} />
 
             {/* Loyalty */}
             <Route path="loyalty"         element={<LoyaltyDashboard />} />
