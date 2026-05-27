@@ -30,7 +30,7 @@ function nextCnNo(type: CreditNote['type'], date: string) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function CreditNotes() {
-  const { user } = useAuth();
+  const { currentUser } = useAuth();
 
   const [notes,     setNotes]     = useState<CreditNote[]>(mockCreditNotes);
   const [retailers, setRetailers] = useState<RetailerAccount[]>(mockRetailers);
@@ -63,7 +63,7 @@ export default function CreditNotes() {
     submitForApproval: boolean,
   ) {
     const now = new Date().toISOString();
-    const userId = user?.id ?? 'usr-010';
+    const userId = currentUser?.id ?? 'usr-010';
 
     if (payload.id) {
       // Edit existing draft
@@ -105,7 +105,7 @@ export default function CreditNotes() {
 
   function handleApprove(cnId: string) {
     const now  = new Date().toISOString();
-    const userId = user?.id ?? 'usr-010';
+    const userId = currentUser?.id ?? 'usr-010';
     const cn   = notes.find((n) => n.id === cnId);
     if (!cn) return;
 

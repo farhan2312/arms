@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { Download, FileText, Mail, CheckCircle2, AlertCircle } from 'lucide-react';
 import { mockSaleTransactions } from '../../data/mockSaleTransactions';
 import { mockFarmers } from '../../data/mockFarmers';
-import { mockProducts } from '../../data/mockProducts';
 import { mockStores } from '../../data/mockStores';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -10,9 +9,8 @@ import { mockStores } from '../../data/mockStores';
 // Subsidised/regulated product IDs (Urea and DAP are controlled under govt scheme)
 const SUBSIDISED_PRODUCTS = new Set(['prd-006', 'prd-007', 'prd-009']); // Urea, DAP, SSP
 
-const farmerById  = new Map(mockFarmers.map((f) => [f.id, f]));
-const productById = new Map(mockProducts.map((p) => [p.id, p]));
-const storeById   = new Map(mockStores.map((s) => [s.id, s]));
+const farmerById = new Map(mockFarmers.map((f) => [f.id, f]));
+const storeById  = new Map(mockStores.map((s) => [s.id, s]));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

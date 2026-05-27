@@ -238,7 +238,7 @@ export default function CreditNoteForm({ note, onSave, onClose }: Props) {
       amount,
       gstAmt,
       netAmt,
-      status: (submitForApproval ? 'PendingApproval' : 'Draft') as const,
+      status: (submitForApproval ? 'PendingApproval' : 'Draft') as CreditNote['status'],
       remarks: form.remarks || undefined,
 
       // Supplier
