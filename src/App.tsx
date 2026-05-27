@@ -18,6 +18,7 @@ import TierManagementPanel from './modules/m14-loyalty/TierManagementPanel';
 import ReportsPage from './modules/m10-reports/ReportsPage';
 import SettingsPage from './modules/m11-settings/SettingsPage';
 import OperationsHeadDashboard from './modules/m12-analytics/OperationsHeadDashboard';
+import BookkeepingPage from './modules/m09-bookkeeping/BookkeepingPage';
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
             <Route path="inventory"       element={<InventoryPage />} />
             <Route path="farmers"         element={<CRMPage />} />
             <Route path="coupons"         element={<CouponsPage />} />
+            <Route path="bookkeeping"     element={<BookkeepingPage />} />
 
             {/* Catalogue */}
             <Route path="products"        element={<ProductsPage />} />
