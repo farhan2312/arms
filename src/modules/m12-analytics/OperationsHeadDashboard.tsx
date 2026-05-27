@@ -13,7 +13,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   ShoppingBag,
-  BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { mockSaleTransactions } from '../../data/mockSaleTransactions';

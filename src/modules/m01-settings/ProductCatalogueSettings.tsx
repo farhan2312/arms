@@ -355,11 +355,7 @@ export default function ProductCatalogueSettings() {
       <Card padding="0">
         <CardHeader
           title="Bulk Import Products"
-          subtitle={
-            <>
-              CSV columns (in order): <span className="font-mono">SKU, Name, Category, UnitPrice, UnitsPerPkg, HSN</span>
-            </>
-          }
+          subtitle="CSV columns (in order): SKU, Name, Category, UnitPrice, UnitsPerPkg, HSN"
         />
 
         <div className="px-5 py-5 space-y-4">

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Plus, Pencil } from 'lucide-react';
-import Badge, { getStatusVariant } from '../../components/ui/Badge';
+import Badge from '../../components/ui/Badge';
 import type { BadgeVariant } from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';

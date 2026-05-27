@@ -4,7 +4,7 @@
 import { useState, useMemo } from 'react';
 import {
   Plus, Trash2, Clock, AlertTriangle,
-  ArrowRight, Package, ChevronDown,
+  ArrowRight, Package, ChevronDown, CheckCircle2,
 } from 'lucide-react';
 import { useToast } from '../../hooks/useToast';
 import { mockBatches } from '../../data/mockBatches';

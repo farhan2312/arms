@@ -9,7 +9,7 @@ import { Select } from '../../components/ui/Input';
 import { Card } from '../../components/ui/Card';
 import Badge, { getTierVariant, getStatusVariant } from '../../components/ui/Badge';
 import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
-import EmptyState from '../../components/ui/EmptyState';
+
 
 const ALL_TIERS: LoyaltyTier[] = ['Green', 'Silver', 'Gold', 'Platinum'];
 

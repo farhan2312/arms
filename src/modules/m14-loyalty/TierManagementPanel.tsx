@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Save, Plus, Trash2, CheckCircle2, Tag } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { Select } from '../../components/ui/Input';
-import { Card, CardHeader } from '../../components/ui/Card';
+import { Card } from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import EmptyState from '../../components/ui/EmptyState';
 import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
@@ -335,7 +335,6 @@ export default function TierManagementPanel() {
               const now = '2026-05-26';
               const isActive  = c.startDate <= now && c.endDate >= now;
               const isFuture  = c.startDate > now;
-              const isExpired = c.endDate < now;
               return (
                 <div key={c.id} className="px-5 py-3.5 flex items-center gap-4">
                   <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
@@ -366,7 +365,6 @@ export default function TierManagementPanel() {
                     iconLeft={Trash2}
                     onClick={() => handleRemoveCampaign(c.id)}
                     size="sm"
-                    title="Remove campaign"
                   />
                 </div>
               );
