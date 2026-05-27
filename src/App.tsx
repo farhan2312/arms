@@ -19,6 +19,7 @@ import ReportsPage from './modules/m10-reports/ReportsPage';
 import SettingsPage from './modules/m11-settings/SettingsPage';
 import OperationsHeadDashboard from './modules/m12-analytics/OperationsHeadDashboard';
 import BookkeepingPage from './modules/m09-bookkeeping/BookkeepingPage';
+import ProcurementPage from './modules/m05-procurement/ProcurementPage';
 
 export default function App() {
   return (
@@ -38,6 +39,7 @@ export default function App() {
             <Route path="farmers"         element={<CRMPage />} />
             <Route path="coupons"         element={<CouponsPage />} />
             <Route path="bookkeeping"     element={<BookkeepingPage />} />
+            <Route path="procurement"     element={<ProcurementPage />} />
 
             {/* Catalogue */}
             <Route path="products"        element={<ProductsPage />} />
