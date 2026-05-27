@@ -24,6 +24,7 @@ import BookkeepingPage from './modules/m09-bookkeeping/BookkeepingPage';
 import ProcurementPage from './modules/m05-procurement/ProcurementPage';
 import ComplianceDashboard from './modules/m08-compliance/ComplianceDashboard';
 import CreditNotes from './modules/m10-creditnotes/CreditNotes';
+import Stores from './modules/m01-stores/Stores';
 
 export default function App() {
   return (
@@ -46,6 +47,7 @@ export default function App() {
             <Route path="procurement"     element={<ProcurementPage />} />
             <Route path="compliance"      element={<ComplianceDashboard />} />
             <Route path="credit-notes"    element={<CreditNotes />} />
+            <Route path="stores"          element={<Stores />} />
 
             {/* Catalogue */}
             <Route path="products"        element={<ProductsPage />} />
