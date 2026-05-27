@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, ShoppingCart, PackageSearch, Leaf, Users,
-  Ticket, Map, Briefcase, Star, SlidersHorizontal,
+  Ticket, Map, Briefcase, Star,
   BarChart3, Activity, Settings, Sprout, Store,
   Building2, BookOpen, FileMinus, CircleDollarSign, ChevronUp,
   ClipboardList, ShieldCheck,
@@ -21,6 +21,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'POS',               path: '/pos',             icon: ShoppingCart,      roles: ['StoreIncharge', 'Cashier'] },
   { label: 'Inventory',         path: '/inventory',       icon: PackageSearch,     roles: ['StoreIncharge', 'WarehouseManager'],   activeFor: ['/inventory', '/grn'] },
   { label: 'Farmers',           path: '/farmers',         icon: Users,             roles: ['StoreIncharge', 'BDM', 'B2BSalesExecutive'], activeFor: ['/farmers', '/outreach', '/wallet-lookup'] },
+  { label: 'Loyalty Dashboard', path: '/loyalty',         icon: Star,              roles: ['BDM', 'Finance'],                                                          activeFor: ['/loyalty', '/wallet-lookup', '/tier-management'] },
   { label: 'Coupons',           path: '/coupons',         icon: Ticket,            roles: ['StoreIncharge', 'Finance'] },
   { label: 'Daily Bookkeeping', path: '/bookkeeping',     icon: BookOpen,          roles: ['StoreIncharge', 'Finance'] },
   { label: 'Compliance',        path: '/compliance',      icon: ShieldCheck,       roles: ['StoreIncharge', 'Finance'] },
@@ -29,7 +30,6 @@ const NAV_ITEMS: NavItem[] = [
   // ── BDM / Field ───────────────────────────────────────────────────────────
   { label: 'Stores',            path: '/stores',          icon: Store,             roles: ['BDM'] },
   { label: 'Field Force',       path: '/field-force',     icon: Map,               roles: ['BDM', 'B2BSalesExecutive', 'FieldAgent'] },
-  { label: 'Loyalty Dashboard', path: '/loyalty',         icon: Star,              roles: ['BDM', 'Finance'] },
 
   // ── B2B / Retailer ────────────────────────────────────────────────────────
   { label: 'B2B Orders',        path: '/b2b-orders',      icon: Briefcase,         roles: ['BDM', 'B2BSalesExecutive', 'WarehouseManager'], activeFor: ['/b2b-orders', '/b2b-new'] },
@@ -43,7 +43,6 @@ const NAV_ITEMS: NavItem[] = [
 
   // ── Platform-wide only (Admin / SuperAdmin / OperationsHead) ──────────────
   { label: 'Operations Dashboard', path: '/analytics',     icon: Activity,          roles: [] },
-  { label: 'Tier Management',   path: '/tier-management', icon: SlidersHorizontal, roles: [] },
   { label: 'Settings',          path: '/settings',        icon: Settings,          roles: [] },
 ];
 
