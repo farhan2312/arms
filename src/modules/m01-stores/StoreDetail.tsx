@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ArrowLeft, Pencil, MapPin, Phone, Mail, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Pencil, MapPin, Phone, Mail, AlertTriangle, Package } from 'lucide-react';
 import type { Store } from '../../types/entities';
 import { mockSaleTransactions } from '../../data/mockSaleTransactions';
 import { mockBatches } from '../../data/mockBatches';
@@ -8,6 +8,11 @@ import { mockProducts } from '../../data/mockProducts';
 import { mockB2BOrders } from '../../data/mockB2BOrders';
 import { mockRetailers } from '../../data/mockRetailers';
 import { MOCK_USERS } from '../../data/mockUsers';
+import Button from '../../components/ui/Button';
+import Badge, { getStatusVariant } from '../../components/ui/Badge';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
+import { Card } from '../../components/ui/Card';
+import EmptyState from '../../components/ui/EmptyState';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -70,32 +75,34 @@ function OverviewTab({ store }: { store: Store }) {
     <div className="space-y-4">
       <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
         {kpis.map((k) => (
-          <div key={k.label} className="bg-white border border-gray-200 rounded-xl p-4">
+          <Card key={k.label} padding="16px">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">{k.label}</p>
             <p className={`text-xl font-bold mt-1 ${k.color}`}>{k.value}</p>
-          </div>
+          </Card>
         ))}
       </div>
 
       {/* Store details card */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5 grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
-        <div>
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">GSTIN</p>
-          <p className="font-mono text-gray-800 mt-0.5">{store.gstIn}</p>
+      <Card padding="20px">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+          <div>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">GSTIN</p>
+            <p className="font-mono text-gray-800 mt-0.5">{store.gstIn}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Zone</p>
+            <p className="text-gray-800 mt-0.5">{store.zoneCode}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Warehouse</p>
+            <p className="text-gray-800 mt-0.5">{store.warehouseId === 'wh-ngp-001' ? 'Nagpur Central' : 'Hyderabad Regional'}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Active Since</p>
+            <p className="text-gray-800 mt-0.5">{new Date(store.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}</p>
+          </div>
         </div>
-        <div>
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Zone</p>
-          <p className="text-gray-800 mt-0.5">{store.zoneCode}</p>
-        </div>
-        <div>
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Warehouse</p>
-          <p className="text-gray-800 mt-0.5">{store.warehouseId === 'wh-ngp-001' ? 'Nagpur Central' : 'Hyderabad Regional'}</p>
-        </div>
-        <div>
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Active Since</p>
-          <p className="text-gray-800 mt-0.5">{new Date(store.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}</p>
-        </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -122,58 +129,52 @@ function StockTab({ store }: { store: Store }) {
   }, [batches]);
 
   if (batches.length === 0) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-        <p className="text-gray-400 text-sm">No stock batches at this store.</p>
-      </div>
-    );
+    return <EmptyState icon={Package} title="No stock batches at this store." />;
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="bg-gray-50 border-b border-gray-100">
-            <th className="text-left px-4 py-3 font-semibold text-gray-500 uppercase tracking-wide">Product</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-500 uppercase tracking-wide">Category</th>
-            <th className="text-right px-4 py-3 font-semibold text-gray-500 uppercase tracking-wide">Total Qty</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-500 uppercase tracking-wide">Batches</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Oldest Expiry</th>
-            <th className="px-4 py-3" />
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-50">
-          {grouped.map(({ product, bList, totalQty, oldestExpiry, nearExpiry }) => (
-            <tr key={product?.id} className={`hover:bg-gray-50 ${nearExpiry ? 'bg-amber-50/30' : ''}`}>
-              <td className="px-4 py-3">
-                <p className="font-medium text-gray-800">{product?.name ?? '—'}</p>
-                <p className="text-gray-400 font-mono">{product?.sku}</p>
-              </td>
-              <td className="px-4 py-3 text-gray-600">{product?.category ?? '—'}</td>
-              <td className="px-4 py-3 text-right font-semibold text-gray-800">{totalQty}</td>
-              <td className="px-4 py-3">
-                <div className="flex flex-col gap-0.5">
-                  {bList.map((b) => (
-                    <span key={b.id} className="text-[10px] font-mono text-gray-500">
-                      {b.batchNo} ×{b.currentQty}
-                    </span>
-                  ))}
-                </div>
-              </td>
-              <td className="px-4 py-3 text-gray-500">{oldestExpiry}</td>
-              <td className="px-4 py-3">
-                {nearExpiry && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
-                    <AlertTriangle size={9} />
-                    Near Expiry
+    <TableWrap>
+      <thead>
+        <tr>
+          <Th>Product</Th>
+          <Th>Category</Th>
+          <Th right>Total Qty</Th>
+          <Th>Batches</Th>
+          <Th>Oldest Expiry</Th>
+          <Th></Th>
+        </tr>
+      </thead>
+      <tbody>
+        {grouped.map(({ product, bList, totalQty, oldestExpiry, nearExpiry }) => (
+          <Tr key={product?.id} className={nearExpiry ? 'bg-amber-50/30' : ''}>
+            <Td>
+              <p className="font-medium text-gray-800">{product?.name ?? '—'}</p>
+              <p className="text-gray-400 font-mono text-xs">{product?.sku}</p>
+            </Td>
+            <Td muted>{product?.category ?? '—'}</Td>
+            <Td right bold>{totalQty}</Td>
+            <Td>
+              <div className="flex flex-col gap-0.5">
+                {bList.map((b) => (
+                  <span key={b.id} className="text-[10px] font-mono text-gray-500">
+                    {b.batchNo} ×{b.currentQty}
                   </span>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                ))}
+              </div>
+            </Td>
+            <Td muted>{oldestExpiry}</Td>
+            <Td>
+              {nearExpiry && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                  <AlertTriangle size={9} />
+                  Near Expiry
+                </span>
+              )}
+            </Td>
+          </Tr>
+        ))}
+      </tbody>
+    </TableWrap>
   );
 }
 
@@ -183,46 +184,41 @@ function StaffTab({ store }: { store: Store }) {
   const staff = MOCK_USERS.filter((u) => u.assignedStoreIds.includes(store.id));
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-gray-50 border-b border-gray-100">
-            <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Name</th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Role</th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Employee Code</th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Mobile</th>
-            <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+    <TableWrap>
+      <thead>
+        <tr>
+          <Th>Name</Th>
+          <Th>Role</Th>
+          <Th>Employee Code</Th>
+          <Th>Mobile</Th>
+          <Th>Status</Th>
+        </tr>
+      </thead>
+      <tbody>
+        {staff.map((u) => (
+          <Tr key={u.id}>
+            <Td bold>{u.name}</Td>
+            <Td>
+              <Badge variant="blue">{u.role}</Badge>
+            </Td>
+            <Td mono muted>{u.employeeCode}</Td>
+            <Td muted>{u.mobile}</Td>
+            <Td>
+              <Badge variant={u.isActive ? 'green' : 'red'}>
+                {u.isActive ? 'Active' : 'Inactive'}
+              </Badge>
+            </Td>
+          </Tr>
+        ))}
+        {staff.length === 0 && (
+          <tr>
+            <td colSpan={5} className="px-4 py-10 text-center text-gray-400 text-sm">
+              No staff assigned to this store.
+            </td>
           </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-50">
-          {staff.map((u) => (
-            <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-3 font-medium text-gray-800">{u.name}</td>
-              <td className="px-4 py-3">
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-blue-100 text-blue-700">
-                  {u.role}
-                </span>
-              </td>
-              <td className="px-4 py-3 font-mono text-gray-500 text-xs">{u.employeeCode}</td>
-              <td className="px-4 py-3 text-gray-600">{u.mobile}</td>
-              <td className="px-4 py-3">
-                {u.isActive
-                  ? <span className="text-[11px] font-medium text-emerald-600">Active</span>
-                  : <span className="text-[11px] font-medium text-red-500">Inactive</span>
-                }
-              </td>
-            </tr>
-          ))}
-          {staff.length === 0 && (
-            <tr>
-              <td colSpan={5} className="px-4 py-10 text-center text-gray-400 text-sm">
-                No staff assigned to this store.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
+        )}
+      </tbody>
+    </TableWrap>
   );
 }
 
@@ -235,33 +231,35 @@ function TransactionsTab({ store }: { store: Store }) {
     .slice(0, 20);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+    <div>
+      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-white rounded-t-xl border border-gray-200">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Last 20 B2C Transactions</p>
         <span className="text-xs text-gray-400">{txns.length} shown</span>
       </div>
-      <table className="w-full text-xs">
+      <TableWrap>
         <thead>
-          <tr className="bg-gray-50 border-b border-gray-100">
-            <th className="text-left px-4 py-3 font-semibold text-gray-500 uppercase tracking-wide">Date</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-500 uppercase tracking-wide">Farmer</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-500 uppercase tracking-wide">Products</th>
-            <th className="text-right px-4 py-3 font-semibold text-gray-500 uppercase tracking-wide">Value</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-500 uppercase tracking-wide">Mode</th>
+          <tr>
+            <Th>Date</Th>
+            <Th>Farmer</Th>
+            <Th>Products</Th>
+            <Th right>Value</Th>
+            <Th>Mode</Th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-50">
+        <tbody>
           {txns.map((txn) => {
             const farmer   = farmerById.get(txn.farmerId);
             const products = txn.lines.map((l) => `${l.productName} ×${l.qty}`).join(', ');
             return (
-              <tr key={txn.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-2.5 text-gray-600 whitespace-nowrap">{txn.invoiceDate}</td>
-                <td className="px-4 py-2.5 font-medium text-gray-800 whitespace-nowrap">{farmer?.name ?? txn.farmerId}</td>
-                <td className="px-4 py-2.5 text-gray-500 max-w-[220px] truncate" title={products}>{products}</td>
-                <td className="px-4 py-2.5 text-right font-semibold text-gray-800">{fmt(txn.totalAmt)}</td>
-                <td className="px-4 py-2.5 text-gray-600">{txn.paymentMode}</td>
-              </tr>
+              <Tr key={txn.id}>
+                <Td muted>{txn.invoiceDate}</Td>
+                <Td bold>{farmer?.name ?? txn.farmerId}</Td>
+                <Td muted>
+                  <span className="max-w-[220px] truncate block" title={products}>{products}</span>
+                </Td>
+                <Td right bold>{fmt(txn.totalAmt)}</Td>
+                <Td muted>{txn.paymentMode}</Td>
+              </Tr>
             );
           })}
           {txns.length === 0 && (
@@ -270,22 +268,12 @@ function TransactionsTab({ store }: { store: Store }) {
             </tr>
           )}
         </tbody>
-      </table>
+      </TableWrap>
     </div>
   );
 }
 
 // ── B2B Activity Tab ──────────────────────────────────────────────────────────
-
-const B2B_STATUS_STYLE: Record<string, string> = {
-  Pending:   'bg-gray-100 text-gray-600',
-  Approved:  'bg-blue-100 text-blue-700',
-  Allocated: 'bg-purple-100 text-purple-700',
-  Dispatched:'bg-amber-100 text-amber-700',
-  Delivered: 'bg-emerald-100 text-emerald-700',
-  Invoiced:  'bg-teal-100 text-teal-700',
-  Cancelled: 'bg-red-100 text-red-600',
-};
 
 function B2BActivityTab({ store }: { store: Store }) {
   const orders = mockB2BOrders
@@ -293,39 +281,38 @@ function B2BActivityTab({ store }: { store: Store }) {
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-100">
+    <div>
+      <div className="px-4 py-3 border-b border-gray-100 bg-white rounded-t-xl border border-gray-200">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">B2B Orders — {store.warehouseId === 'wh-ngp-001' ? 'Nagpur Warehouse' : 'Hyderabad Warehouse'}</p>
       </div>
-      <table className="w-full text-xs">
+      <TableWrap>
         <thead>
-          <tr className="bg-gray-50 border-b border-gray-100">
-            <th className="text-left px-4 py-3 font-semibold text-gray-500 uppercase tracking-wide">Order ID</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-500 uppercase tracking-wide">Retailer</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-500 uppercase tracking-wide">Products</th>
-            <th className="text-right px-4 py-3 font-semibold text-gray-500 uppercase tracking-wide">Value</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-            <th className="text-left px-4 py-3 font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Dispatch By</th>
+          <tr>
+            <Th>Order ID</Th>
+            <Th>Retailer</Th>
+            <Th>Products</Th>
+            <Th right>Value</Th>
+            <Th>Status</Th>
+            <Th>Dispatch By</Th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-50">
+        <tbody>
           {orders.map((ord) => {
             const retailer = retailerById.get(ord.retailerId);
             const products = ord.lines.map((l) => `${l.productName} ×${l.allocatedQty}`).join(', ');
-            const styleCls = B2B_STATUS_STYLE[ord.status] ?? 'bg-gray-100 text-gray-600';
             return (
-              <tr key={ord.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-2.5 font-mono text-gray-700 whitespace-nowrap">{ord.orderNo}</td>
-                <td className="px-4 py-2.5 font-medium text-gray-800">{retailer?.firmName ?? ord.retailerId}</td>
-                <td className="px-4 py-2.5 text-gray-500 max-w-[200px] truncate" title={products}>{products}</td>
-                <td className="px-4 py-2.5 text-right font-semibold text-gray-800">{fmt(ord.totalAmt)}</td>
-                <td className="px-4 py-2.5">
-                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${styleCls}`}>
-                    {ord.status}
-                  </span>
-                </td>
-                <td className="px-4 py-2.5 text-gray-500">{ord.dispatchByDate ?? '—'}</td>
-              </tr>
+              <Tr key={ord.id}>
+                <Td mono>{ord.orderNo}</Td>
+                <Td bold>{retailer?.firmName ?? ord.retailerId}</Td>
+                <Td muted>
+                  <span className="max-w-[200px] truncate block" title={products}>{products}</span>
+                </Td>
+                <Td right bold>{fmt(ord.totalAmt)}</Td>
+                <Td>
+                  <Badge variant={getStatusVariant(ord.status)}>{ord.status}</Badge>
+                </Td>
+                <Td muted>{ord.dispatchByDate ?? '—'}</Td>
+              </Tr>
             );
           })}
           {orders.length === 0 && (
@@ -334,7 +321,7 @@ function B2BActivityTab({ store }: { store: Store }) {
             </tr>
           )}
         </tbody>
-      </table>
+      </TableWrap>
     </div>
   );
 }
@@ -358,13 +345,14 @@ export default function StoreDetail({ store, onBack, onEdit }: Props) {
     <div className="space-y-5">
       {/* Back + header */}
       <div className="flex items-start gap-4">
-        <button
+        <Button
+          variant="ghost"
+          iconLeft={ArrowLeft}
           onClick={onBack}
-          className="mt-0.5 flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors flex-shrink-0"
+          size="sm"
         >
-          <ArrowLeft size={15} />
           All Stores
-        </button>
+        </Button>
 
         <div className="flex-1">
           <div className="flex items-center gap-3">
@@ -372,10 +360,9 @@ export default function StoreDetail({ store, onBack, onEdit }: Props) {
             <span className="text-[10px] font-bold font-mono text-gray-400 bg-gray-100 px-2 py-0.5 rounded tracking-widest">
               {store.code}
             </span>
-            {store.isActive
-              ? <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">Active</span>
-              : <span className="text-[10px] font-medium text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">Inactive</span>
-            }
+            <Badge variant={store.isActive ? 'green' : 'red'}>
+              {store.isActive ? 'Active' : 'Inactive'}
+            </Badge>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-gray-500">
             <span className="flex items-center gap-1"><MapPin size={11} />{store.address.district}, {store.address.state} — {store.address.pincode}</span>
@@ -387,13 +374,14 @@ export default function StoreDetail({ store, onBack, onEdit }: Props) {
           </div>
         </div>
 
-        <button
+        <Button
+          variant="secondary"
+          iconLeft={Pencil}
+          size="sm"
           onClick={() => onEdit(store)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors flex-shrink-0"
         >
-          <Pencil size={12} />
           Edit
-        </button>
+        </Button>
       </div>
 
       {/* Tab bar */}

@@ -2,7 +2,13 @@
 // Covers urea and DAP sold with Aadhaar e-KYC or manual fallback
 
 import { useState, useMemo } from 'react';
-import { ShieldCheck, AlertTriangle, Download, CheckCircle2, X, FileText } from 'lucide-react';
+import { AlertTriangle, Download, FileText, CheckCircle2 } from 'lucide-react';
+import PageHeader from '../../components/ui/PageHeader';
+import Button from '../../components/ui/Button';
+import { Card } from '../../components/ui/Card';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
+import { Select } from '../../components/ui/Input';
+import SlideOver from '../../components/ui/SlideOver';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -314,28 +320,44 @@ export default function ComplianceDashboard() {
     { label: 'Manual Fallback Today', value: String(todayManual),        sub: 'flagged for review',                                                              color: 'bg-amber-50 border-amber-200',   icon: '⚠' },
   ];
 
-  const selectCls = 'border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500';
+  // ── SlideOver footer ───────────────────────────────────────────────────────────
+  const slideOverFooter = reviewRecord ? (
+    <div className="flex flex-col gap-2 w-full">
+      <Button
+        variant="primary"
+        onClick={() => {
+          console.log('// PATCH /api/compliance/records/' + reviewRecord.id + ' — mark reviewed');
+          setReviewRecord(null);
+        }}
+        className="w-full justify-center"
+      >
+        Mark Reviewed — Approved
+      </Button>
+      <Button
+        variant="danger"
+        onClick={() => {
+          console.log('// PATCH /api/compliance/records/' + reviewRecord.id + ' — escalate');
+          setReviewRecord(null);
+        }}
+        className="w-full justify-center"
+      >
+        Escalate to Compliance Officer
+      </Button>
+    </div>
+  ) : null;
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <ShieldCheck size={20} className="text-emerald-600" />
-            <h1 className="text-xl font-bold text-gray-900">Fertiliser Compliance</h1>
-          </div>
-          <p className="text-sm text-gray-500">
-            Aadhaar e-KYC records for subsidised urea and DAP sales
-          </p>
-        </div>
-        <button
-          onClick={exportReport}
-          className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
-        >
-          <Download size={13} /> Export Compliance Report
-        </button>
-      </div>
+      <PageHeader
+        title="Fertiliser Compliance"
+        subtitle="Aadhaar e-KYC records for subsidised urea and DAP sales"
+        actions={
+          <Button variant="secondary" iconLeft={Download} size="sm" onClick={exportReport}>
+            Export Compliance Report
+          </Button>
+        }
+      />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -352,7 +374,7 @@ export default function ComplianceDashboard() {
       </div>
 
       {/* Monthly Summary */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-4">
+      <Card padding="24px">
         <div className="flex items-center gap-2 mb-4">
           <FileText size={15} className="text-gray-500" />
           <h3 className="text-sm font-semibold text-gray-800">Monthly Summary — May 2026</h3>
@@ -386,176 +408,156 @@ export default function ComplianceDashboard() {
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+      <Card padding="16px">
         <p className="text-xs font-semibold text-gray-700 mb-3">Filters</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <select value={filterStoreId} onChange={e => setFilterStoreId(e.target.value)} className={selectCls}>
+          <Select value={filterStoreId} onChange={setFilterStoreId}>
             <option value="">All stores</option>
             {allStores.map(s => (
               <option key={s.id} value={s.id}>{s.name.replace('Bharat Agri Store – ', '')}</option>
             ))}
-          </select>
-          <input type="date" value={filterFrom} onChange={e => setFilterFrom(e.target.value)} className={selectCls} title="From date" />
-          <input type="date" value={filterTo}   onChange={e => setFilterTo(e.target.value)}   className={selectCls} title="To date" />
-          <select value={filterMethod} onChange={e => setFilterMethod(e.target.value as VerificationMethod | '')} className={selectCls}>
+          </Select>
+          <input
+            type="date"
+            value={filterFrom}
+            onChange={e => setFilterFrom(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            title="From date"
+          />
+          <input
+            type="date"
+            value={filterTo}
+            onChange={e => setFilterTo(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            title="To date"
+          />
+          <Select value={filterMethod} onChange={(v) => setFilterMethod(v as VerificationMethod | '')}>
             <option value="">All methods</option>
             <option value="eKYC">e-KYC</option>
             <option value="Manual">Manual (Flagged)</option>
-          </select>
+          </Select>
         </div>
         {hasFilters && (
           <button onClick={clearFilters} className="mt-2 text-[11px] text-red-500 hover:text-red-700 font-medium transition-colors">
             Clear all filters
           </button>
         )}
-      </div>
+      </Card>
 
       {/* Records Table */}
-      <div className="rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              {['Date', 'Store', 'Product', 'Qty', 'Farmer', 'Masked Aadhaar', 'Method', 'Invoice', ''].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(rec => (
-              <tr
-                key={rec.id}
-                className={`border-b border-gray-100 transition-colors ${
-                  rec.flagged ? 'bg-amber-50/60 hover:bg-amber-50' : 'hover:bg-gray-50'
-                }`}
-              >
-                <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{fmtDate(rec.date)}</td>
-                <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">
-                  {rec.storeName.replace('Bharat Agri Store – ', '')}
-                </td>
-                <td className="px-4 py-3 text-xs">
-                  <p className="font-medium text-gray-800">{rec.productName}</p>
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                    rec.productCategory === 'Urea' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
-                  }`}>{rec.productCategory}</span>
-                </td>
-                <td className="px-4 py-3 text-xs text-gray-700 whitespace-nowrap font-mono">
-                  {rec.qtyPacks} packs<br />
-                  <span className="text-gray-400">{rec.qtyKg} kg</span>
-                </td>
-                <td className="px-4 py-3 text-xs">
-                  <p className="font-medium text-gray-800">{rec.farmerName}</p>
-                  <p className="text-[10px] text-gray-400">{rec.farmerMobile}</p>
-                </td>
-                <td className="px-4 py-3 text-xs font-mono text-gray-700">{rec.maskedAadhaar}</td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  {rec.verificationMethod === 'eKYC' ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                      <CheckCircle2 size={9} /> e-KYC
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                      <AlertTriangle size={9} /> Manual
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-[10px] font-mono text-gray-400 whitespace-nowrap">{rec.invoiceNo}</td>
-                <td className="px-4 py-3">
-                  {rec.flagged && (
-                    <button
-                      onClick={() => setReviewRecord(rec)}
-                      className="text-[11px] font-semibold px-2 py-1 rounded bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors whitespace-nowrap"
-                    >
-                      Review
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
+      <TableWrap>
+        <thead>
+          <tr>
+            <Th>Date</Th>
+            <Th>Store</Th>
+            <Th>Product</Th>
+            <Th>Qty</Th>
+            <Th>Farmer</Th>
+            <Th>Masked Aadhaar</Th>
+            <Th>Method</Th>
+            <Th>Invoice</Th>
+            <Th />
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.map(rec => (
+            <Tr key={rec.id} className={rec.flagged ? 'bg-amber-50/60' : ''}>
+              <Td muted>{fmtDate(rec.date)}</Td>
+              <Td muted>{rec.storeName.replace('Bharat Agri Store – ', '')}</Td>
+              <Td>
+                <p className="font-medium text-gray-800 text-xs">{rec.productName}</p>
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                  rec.productCategory === 'Urea' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                }`}>{rec.productCategory}</span>
+              </Td>
+              <Td mono>
+                {rec.qtyPacks} packs<br />
+                <span className="text-gray-400 text-xs">{rec.qtyKg} kg</span>
+              </Td>
+              <Td>
+                <p className="font-medium text-gray-800 text-xs">{rec.farmerName}</p>
+                <p className="text-[10px] text-gray-400">{rec.farmerMobile}</p>
+              </Td>
+              <Td mono muted>{rec.maskedAadhaar}</Td>
+              <Td>
+                {rec.verificationMethod === 'eKYC' ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                    <CheckCircle2 size={9} /> e-KYC
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                    <AlertTriangle size={9} /> Manual
+                  </span>
+                )}
+              </Td>
+              <Td mono muted>{rec.invoiceNo}</Td>
+              <Td>
+                {rec.flagged && (
+                  <button
+                    onClick={() => setReviewRecord(rec)}
+                    className="text-[11px] font-semibold px-2 py-1 rounded bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors whitespace-nowrap"
+                  >
+                    Review
+                  </button>
+                )}
+              </Td>
+            </Tr>
+          ))}
 
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={9} className="px-4 py-12 text-center text-sm text-gray-400">
-                  No compliance records match the selected filters.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+          {filtered.length === 0 && (
+            <Tr>
+              <td colSpan={9} className="px-4 py-12 text-center text-sm text-gray-400">
+                No compliance records match the selected filters.
+              </td>
+            </Tr>
+          )}
+        </tbody>
+      </TableWrap>
 
-      {/* ── Review Panel (slide-over) ─────────────────────────────────────────── */}
-      {reviewRecord && (
-        <>
-          <div className="fixed inset-0 bg-black/30 z-40" onClick={() => setReviewRecord(null)} />
-          <div className="fixed right-0 top-0 h-full w-[440px] bg-white shadow-2xl z-50 flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+      {/* ── Review SlideOver ──────────────────────────────────────────────────── */}
+      <SlideOver
+        open={!!reviewRecord}
+        title="Compliance Review"
+        subtitle="Manual verification — flagged"
+        onClose={() => setReviewRecord(null)}
+        width={440}
+        footer={slideOverFooter}
+      >
+        {reviewRecord && (
+          <div className="space-y-5">
+            {/* Amber flag banner */}
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-300 rounded-lg px-3 py-3 text-xs text-amber-800">
+              <AlertTriangle size={14} className="flex-shrink-0 mt-0.5 text-amber-600" />
               <div>
-                <h2 className="text-base font-bold text-gray-900">Compliance Review</h2>
-                <p className="text-xs text-amber-600 font-medium mt-0.5">Manual verification — flagged</p>
-              </div>
-              <button onClick={() => setReviewRecord(null)} className="p-1 rounded hover:bg-gray-100 text-gray-500">
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-              {/* Amber flag banner */}
-              <div className="flex items-start gap-2 bg-amber-50 border border-amber-300 rounded-lg px-3 py-3 text-xs text-amber-800">
-                <AlertTriangle size={14} className="flex-shrink-0 mt-0.5 text-amber-600" />
-                <div>
-                  <p className="font-bold">Manual Aadhaar fallback used</p>
-                  <p className="mt-0.5">This transaction was processed without successful e-KYC. Compliance review required.</p>
-                </div>
-              </div>
-
-              {/* Transaction details */}
-              <div className="space-y-3 text-xs">
-                <Field label="Invoice No"        value={reviewRecord.invoiceNo} mono />
-                <Field label="Date"              value={fmtDate(reviewRecord.date)} />
-                <Field label="Store"             value={reviewRecord.storeName} />
-                <Field label="Product"           value={`${reviewRecord.productName} · ${reviewRecord.qtyPacks} packs (${reviewRecord.qtyKg} kg)`} />
-                <Field label="Farmer"            value={`${reviewRecord.farmerName} — ${reviewRecord.farmerMobile}`} />
-                <Field label="Masked Aadhaar"    value={reviewRecord.maskedAadhaar} mono />
-                <Field label="Physical Ref"      value={reviewRecord.physicalRef ?? '—'} mono />
-              </div>
-
-              {/* Justification notes */}
-              <div>
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Justification Notes</p>
-                <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-xs text-gray-700 leading-relaxed">
-                  {reviewRecord.justificationNotes ?? '—'}
-                </div>
+                <p className="font-bold">Manual Aadhaar fallback used</p>
+                <p className="mt-0.5">This transaction was processed without successful e-KYC. Compliance review required.</p>
               </div>
             </div>
 
-            <div className="border-t border-gray-200 px-6 py-4 space-y-2 flex-shrink-0">
-              <button
-                onClick={() => {
-                  console.log('// PATCH /api/compliance/records/' + reviewRecord.id + ' — mark reviewed');
-                  setReviewRecord(null);
-                }}
-                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors"
-              >
-                Mark Reviewed — Approved
-              </button>
-              <button
-                onClick={() => {
-                  console.log('// PATCH /api/compliance/records/' + reviewRecord.id + ' — escalate');
-                  setReviewRecord(null);
-                }}
-                className="w-full py-2 rounded-xl border border-red-300 text-red-600 text-xs font-semibold hover:bg-red-50 transition-colors"
-              >
-                Escalate to Compliance Officer
-              </button>
+            {/* Transaction details */}
+            <div className="space-y-3 text-xs">
+              <Field label="Invoice No"     value={reviewRecord.invoiceNo} mono />
+              <Field label="Date"           value={fmtDate(reviewRecord.date)} />
+              <Field label="Store"          value={reviewRecord.storeName} />
+              <Field label="Product"        value={`${reviewRecord.productName} · ${reviewRecord.qtyPacks} packs (${reviewRecord.qtyKg} kg)`} />
+              <Field label="Farmer"         value={`${reviewRecord.farmerName} — ${reviewRecord.farmerMobile}`} />
+              <Field label="Masked Aadhaar" value={reviewRecord.maskedAadhaar} mono />
+              <Field label="Physical Ref"   value={reviewRecord.physicalRef ?? '—'} mono />
+            </div>
+
+            {/* Justification notes */}
+            <div>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Justification Notes</p>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-xs text-gray-700 leading-relaxed">
+                {reviewRecord.justificationNotes ?? '—'}
+              </div>
             </div>
           </div>
-        </>
-      )}
+        )}
+      </SlideOver>
     </div>
   );
 }

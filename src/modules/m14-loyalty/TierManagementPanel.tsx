@@ -4,6 +4,12 @@
 
 import { useState } from 'react';
 import { Save, Plus, Trash2, CheckCircle2, Tag } from 'lucide-react';
+import Button from '../../components/ui/Button';
+import { Select } from '../../components/ui/Input';
+import { Card, CardHeader } from '../../components/ui/Card';
+import Badge from '../../components/ui/Badge';
+import EmptyState from '../../components/ui/EmptyState';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -42,11 +48,11 @@ const INITIAL_CAMPAIGNS: Campaign[] = [
 
 const CATEGORIES = ['Seed', 'Fertiliser', 'Micronutrient', 'Pesticide'];
 
-const TIER_STYLE: Record<Tier, string> = {
-  Green:    'bg-green-100 text-green-700',
-  Silver:   'bg-slate-100 text-slate-600',
-  Gold:     'bg-amber-100 text-amber-700',
-  Platinum: 'bg-purple-100 text-purple-700',
+const TIER_BADGE_VARIANT: Record<Tier, 'green' | 'gray' | 'amber' | 'purple'> = {
+  Green:    'green',
+  Silver:   'gray',
+  Gold:     'amber',
+  Platinum: 'purple',
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -54,6 +60,8 @@ const TIER_STYLE: Record<Tier, string> = {
 function fmtRs(n: number) {
   return `₹${n.toLocaleString('en-IN')}`;
 }
+
+const inputCls = 'text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white';
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -130,107 +138,102 @@ export default function TierManagementPanel() {
       </div>
 
       {/* ── Tier configuration table ────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <Card padding="0">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-800">Tier Configuration</h2>
-          <button
+          <div>
+            <p className="text-sm font-semibold text-gray-800">Tier Configuration</p>
+          </div>
+          <Button
+            variant={saved ? 'secondary' : 'primary'}
+            iconLeft={saved ? CheckCircle2 : Save}
             onClick={handleSave}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all ${
-              saved
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-            }`}
+            size="sm"
           >
-            {saved ? <CheckCircle2 size={14} /> : <Save size={14} />}
             {saved ? 'Saved!' : 'Save Configuration'}
-          </button>
+          </Button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50 text-gray-400">
-                <th className="text-left px-4 py-3 font-medium">Tier</th>
-                <th className="text-left px-4 py-3 font-medium">Min Spend (₹)</th>
-                <th className="text-left px-4 py-3 font-medium">Max Spend (₹)</th>
-                <th className="text-left px-4 py-3 font-medium">
-                  Earn Rate
-                  <span className="block text-[9px] font-normal text-gray-400">pts per ₹10 eligible</span>
-                </th>
-                <th className="text-left px-4 py-3 font-medium">
-                  Redemption
-                  <span className="block text-[9px] font-normal text-gray-400">pts per ₹1</span>
-                </th>
-                <th className="text-left px-4 py-3 font-medium">Effective Range</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {tiers.map(row => (
-                <tr key={row.tier} className="hover:bg-gray-50/60 transition-colors">
-                  <td className="px-4 py-3">
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${TIER_STYLE[row.tier]}`}>
-                      {row.tier}
-                    </span>
-                  </td>
+        <TableWrap>
+          <thead>
+            <tr>
+              <Th>Tier</Th>
+              <Th>Min Spend (₹)</Th>
+              <Th>Max Spend (₹)</Th>
+              <Th>
+                Earn Rate
+                <span className="block text-[9px] font-normal text-gray-400">pts per ₹10 eligible</span>
+              </Th>
+              <Th>
+                Redemption
+                <span className="block text-[9px] font-normal text-gray-400">pts per ₹1</span>
+              </Th>
+              <Th>Effective Range</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {tiers.map(row => (
+              <Tr key={row.tier}>
+                <Td>
+                  <Badge variant={TIER_BADGE_VARIANT[row.tier]}>{row.tier}</Badge>
+                </Td>
 
-                  {/* Min spend */}
-                  <td className="px-4 py-3">
+                {/* Min spend */}
+                <Td>
+                  <input
+                    type="number"
+                    value={row.minSpend}
+                    onChange={e => handleTierChange(row.tier, 'minSpend', e.target.value)}
+                    className={`w-28 ${inputCls}`}
+                  />
+                </Td>
+
+                {/* Max spend */}
+                <Td>
+                  {row.tier === 'Platinum' ? (
+                    <span className="text-gray-400 text-xs italic">Unlimited</span>
+                  ) : (
                     <input
                       type="number"
-                      value={row.minSpend}
-                      onChange={e => handleTierChange(row.tier, 'minSpend', e.target.value)}
-                      className="w-28 text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                      value={row.maxSpend ?? ''}
+                      onChange={e => handleTierChange(row.tier, 'maxSpend', e.target.value)}
+                      className={`w-28 ${inputCls}`}
                     />
-                  </td>
+                  )}
+                </Td>
 
-                  {/* Max spend */}
-                  <td className="px-4 py-3">
-                    {row.tier === 'Platinum' ? (
-                      <span className="text-gray-400 text-xs italic">Unlimited</span>
-                    ) : (
-                      <input
-                        type="number"
-                        value={row.maxSpend ?? ''}
-                        onChange={e => handleTierChange(row.tier, 'maxSpend', e.target.value)}
-                        className="w-28 text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-                      />
-                    )}
-                  </td>
+                {/* Earn rate */}
+                <Td>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0.5"
+                    value={row.earnRate}
+                    onChange={e => handleTierChange(row.tier, 'earnRate', e.target.value)}
+                    className={`w-20 ${inputCls}`}
+                  />
+                </Td>
 
-                  {/* Earn rate */}
-                  <td className="px-4 py-3">
-                    <input
-                      type="number"
-                      step="0.5"
-                      min="0.5"
-                      value={row.earnRate}
-                      onChange={e => handleTierChange(row.tier, 'earnRate', e.target.value)}
-                      className="w-20 text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-                    />
-                  </td>
+                {/* Redemption rate */}
+                <Td>
+                  <input
+                    type="number"
+                    step="1"
+                    min="1"
+                    value={row.redemptionRate}
+                    onChange={e => handleTierChange(row.tier, 'redemptionRate', e.target.value)}
+                    className={`w-20 ${inputCls}`}
+                  />
+                </Td>
 
-                  {/* Redemption rate */}
-                  <td className="px-4 py-3">
-                    <input
-                      type="number"
-                      step="1"
-                      min="1"
-                      value={row.redemptionRate}
-                      onChange={e => handleTierChange(row.tier, 'redemptionRate', e.target.value)}
-                      className="w-20 text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-                    />
-                  </td>
-
-                  {/* Effective range display */}
-                  <td className="px-4 py-3 text-gray-500">
-                    {fmtRs(row.minSpend)} –{' '}
-                    {row.maxSpend !== null ? fmtRs(row.maxSpend) : '∞'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                {/* Effective range display */}
+                <Td muted>
+                  {fmtRs(row.minSpend)} –{' '}
+                  {row.maxSpend !== null ? fmtRs(row.maxSpend) : '∞'}
+                </Td>
+              </Tr>
+            ))}
+          </tbody>
+        </TableWrap>
 
         <div className="px-5 py-3 bg-gray-50 border-t border-gray-100">
           <p className="text-[11px] text-gray-400">
@@ -239,12 +242,12 @@ export default function TierManagementPanel() {
             Changes take effect from the next transaction after saving.
           </p>
         </div>
-      </div>
+      </Card>
 
       {/* ── Bonus campaign creator ───────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+      <Card padding="0">
         <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-800">Bonus Campaigns</h2>
+          <p className="text-sm font-semibold text-gray-800">Bonus Campaigns</p>
           <p className="text-[11px] text-gray-400 mt-0.5">
             Apply a points multiplier to a product category for a date range
           </p>
@@ -256,13 +259,12 @@ export default function TierManagementPanel() {
             {/* Category */}
             <div>
               <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest block mb-1">Category</label>
-              <select
+              <Select
                 value={campCategory}
-                onChange={e => setCampCategory(e.target.value)}
-                className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                onChange={setCampCategory}
               >
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              </Select>
             </div>
 
             {/* Multiplier */}
@@ -275,7 +277,7 @@ export default function TierManagementPanel() {
                 max="10"
                 value={campMultiplier}
                 onChange={e => setCampMultiplier(parseFloat(e.target.value))}
-                className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                className={`w-full ${inputCls}`}
               />
             </div>
 
@@ -286,7 +288,7 @@ export default function TierManagementPanel() {
                 type="date"
                 value={campStart}
                 onChange={e => setCampStart(e.target.value)}
-                className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                className={`w-full ${inputCls}`}
               />
             </div>
 
@@ -297,19 +299,21 @@ export default function TierManagementPanel() {
                 type="date"
                 value={campEnd}
                 onChange={e => setCampEnd(e.target.value)}
-                className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                className={`w-full ${inputCls}`}
               />
             </div>
 
             {/* Add button */}
             <div className="flex items-end">
-              <button
+              <Button
+                variant="primary"
+                iconLeft={Plus}
                 onClick={handleAddCampaign}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                size="sm"
+                className="w-full justify-center"
               >
-                <Plus size={13} />
                 Add Campaign
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -320,10 +324,11 @@ export default function TierManagementPanel() {
 
         {/* Campaign list */}
         {campaigns.length === 0 ? (
-          <div className="py-10 text-center">
-            <Tag size={20} className="text-gray-300 mx-auto mb-2" />
-            <p className="text-xs text-gray-400">No campaigns yet. Add one above.</p>
-          </div>
+          <EmptyState
+            icon={Tag}
+            title="No campaigns yet"
+            subtitle="Add one above."
+          />
         ) : (
           <div className="divide-y divide-gray-50">
             {campaigns.map(c => {
@@ -351,28 +356,24 @@ export default function TierManagementPanel() {
                     </div>
                     <div>
                       <p className="text-[10px] text-gray-400">Status</p>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                        isActive  ? 'bg-emerald-100 text-emerald-700' :
-                        isFuture  ? 'bg-blue-100 text-blue-700'      :
-                        isExpired ? 'bg-gray-100 text-gray-500'      : ''
-                      }`}>
+                      <Badge variant={isActive ? 'green' : isFuture ? 'blue' : 'gray'}>
                         {isActive ? 'Active' : isFuture ? 'Upcoming' : 'Expired'}
-                      </span>
+                      </Badge>
                     </div>
                   </div>
-                  <button
+                  <Button
+                    variant="ghost"
+                    iconLeft={Trash2}
                     onClick={() => handleRemoveCampaign(c.id)}
-                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                    size="sm"
                     title="Remove campaign"
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                  />
                 </div>
               );
             })}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

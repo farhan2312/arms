@@ -1,15 +1,26 @@
 import { useState, useMemo } from 'react';
 import { Plus, Pencil } from 'lucide-react';
-import Badge from '../../components/ui/Badge';
+import Badge, { getStatusVariant } from '../../components/ui/Badge';
+import type { BadgeVariant } from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
+import { Card } from '../../components/ui/Card';
 import type { CreditNote, CreditNoteType, CreditNoteStatus } from './types';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const STATUS_BADGE: Record<CreditNoteStatus, { label: string; cls: string }> = {
-  Draft:            { label: 'Draft',            cls: 'bg-gray-100 text-gray-600' },
-  PendingApproval:  { label: 'Pending Approval', cls: 'bg-amber-100 text-amber-700' },
-  Posted:           { label: 'Posted',           cls: 'bg-emerald-100 text-emerald-700' },
-  Rejected:         { label: 'Rejected',         cls: 'bg-red-100 text-red-700' },
+const STATUS_LABEL: Record<CreditNoteStatus, string> = {
+  Draft:           'Draft',
+  PendingApproval: 'Pending Approval',
+  Posted:          'Posted',
+  Rejected:        'Rejected',
+};
+
+const STATUS_VARIANT: Record<CreditNoteStatus, BadgeVariant> = {
+  Draft:           'gray',
+  PendingApproval: 'amber',
+  Posted:          'green',
+  Rejected:        'red',
 };
 
 const REASON_LABELS: Record<string, string> = {
@@ -62,25 +73,28 @@ export default function CreditNoteList({ notes, onCreate, onSelect, onEdit }: Pr
     <div className="space-y-5">
       {/* Summary pills */}
       <div className="flex flex-wrap items-center gap-4 text-sm">
-        <div className="bg-white border border-gray-200 rounded-xl px-4 py-2.5">
+        <Card padding="10px 16px">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Total Credit Notes</p>
           <p className="text-lg font-bold text-gray-900">{filtered.length}</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl px-4 py-2.5">
+        </Card>
+        <Card padding="10px 16px">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Posted Value</p>
           <p className="text-lg font-bold text-emerald-700">{fmt(totalPosted)}</p>
-        </div>
-        <div className="bg-white border border-amber-200 rounded-xl px-4 py-2.5">
+        </Card>
+        <div
+          style={{
+            backgroundColor: '#fffbeb',
+            border: '1px solid #fcd34d',
+            borderRadius: 'var(--radius-lg)',
+            padding: '10px 16px',
+          }}
+        >
           <p className="text-[10px] font-semibold text-amber-500 uppercase tracking-widest">Pending Approval</p>
           <p className="text-lg font-bold text-amber-700">{filtered.filter((cn) => cn.status === 'PendingApproval').length}</p>
         </div>
-        <button
-          onClick={onCreate}
-          className="ml-auto flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 transition-colors"
-        >
-          <Plus size={14} />
+        <Button variant="primary" iconLeft={Plus} onClick={onCreate} className="ml-auto">
           Create Credit Note
-        </button>
+        </Button>
       </div>
 
       {/* Filters */}
@@ -133,83 +147,78 @@ export default function CreditNoteList({ notes, onCreate, onSelect, onEdit }: Pr
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">CN Number</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Party</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Linked Ref</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">GST</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Net Amount</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-              <th className="px-4 py-3" />
+      <TableWrap>
+        <thead>
+          <tr>
+            <Th>CN Number</Th>
+            <Th>Type</Th>
+            <Th>Party</Th>
+            <Th>Linked Ref</Th>
+            <Th right>Amount</Th>
+            <Th right>GST</Th>
+            <Th right>Net Amount</Th>
+            <Th>Date</Th>
+            <Th>Status</Th>
+            <Th />
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.map((cn) => {
+            const reason = cn.supplierReason ?? cn.b2bReason;
+            return (
+              <Tr
+                key={cn.id}
+                onClick={() => onSelect(cn.id)}
+              >
+                <Td mono><span className="font-semibold text-gray-800">{cn.cnNo}</span></Td>
+                <Td>
+                  <Badge
+                    label={cn.type === 'B2BCustomer' ? 'B2B Customer' : 'Supplier'}
+                    variant={cn.type === 'Supplier' ? 'blue' : 'purple'}
+                  />
+                </Td>
+                <Td>
+                  <p className="text-xs font-medium text-gray-800 leading-snug">
+                    {cn.supplierName ?? cn.retailerName ?? '—'}
+                  </p>
+                  {reason && (
+                    <p className="text-[11px] text-gray-400 mt-0.5">{REASON_LABELS[reason] ?? reason}</p>
+                  )}
+                </Td>
+                <Td mono muted>{cn.linkedGrnId ?? cn.linkedInvoiceNo ?? '—'}</Td>
+                <Td right muted>{fmt(cn.amount)}</Td>
+                <Td right muted>{fmt(cn.gstAmt)}</Td>
+                <Td right bold>{fmt(cn.netAmt)}</Td>
+                <Td muted>{cn.date}</Td>
+                <Td>
+                  <Badge
+                    label={STATUS_LABEL[cn.status]}
+                    variant={STATUS_VARIANT[cn.status]}
+                  />
+                </Td>
+                <Td>
+                  {cn.status === 'Draft' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onEdit(cn); }}
+                      className="text-gray-300 hover:text-emerald-600 transition-colors"
+                      title="Edit draft"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                  )}
+                </Td>
+              </Tr>
+            );
+          })}
+          {filtered.length === 0 && (
+            <tr>
+              <td colSpan={10} className="px-4 py-12 text-center text-sm text-gray-400">
+                No credit notes match the current filters.
+              </td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {filtered.map((cn) => {
-              const sb = STATUS_BADGE[cn.status];
-              const reason = cn.supplierReason ?? cn.b2bReason;
-              return (
-                <tr
-                  key={cn.id}
-                  onClick={() => onSelect(cn.id)}
-                  className="cursor-pointer hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-4 py-3 text-xs font-mono font-semibold text-gray-800">{cn.cnNo}</td>
-                  <td className="px-4 py-3">
-                    <Badge
-                      label={cn.type === 'B2BCustomer' ? 'B2B Customer' : 'Supplier'}
-                      variant={cn.type === 'Supplier' ? 'blue' : 'purple'}
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="text-xs font-medium text-gray-800 leading-snug">
-                      {cn.supplierName ?? cn.retailerName ?? '—'}
-                    </p>
-                    {reason && (
-                      <p className="text-[11px] text-gray-400 mt-0.5">{REASON_LABELS[reason] ?? reason}</p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-xs font-mono text-gray-500">
-                    {cn.linkedGrnId ?? cn.linkedInvoiceNo ?? '—'}
-                  </td>
-                  <td className="px-4 py-3 text-right text-xs text-gray-600">{fmt(cn.amount)}</td>
-                  <td className="px-4 py-3 text-right text-xs text-gray-500">{fmt(cn.gstAmt)}</td>
-                  <td className="px-4 py-3 text-right text-xs font-semibold text-gray-900">{fmt(cn.netAmt)}</td>
-                  <td className="px-4 py-3 text-xs text-gray-500">{cn.date}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${sb.cls}`}>
-                      {sb.label}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                    {cn.status === 'Draft' && (
-                      <button
-                        onClick={() => onEdit(cn)}
-                        className="text-gray-300 hover:text-emerald-600 transition-colors"
-                        title="Edit draft"
-                      >
-                        <Pencil size={13} />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={10} className="px-4 py-12 text-center text-sm text-gray-400">
-                  No credit notes match the current filters.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+          )}
+        </tbody>
+      </TableWrap>
     </div>
   );
 }

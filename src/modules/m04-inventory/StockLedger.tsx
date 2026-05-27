@@ -1,15 +1,19 @@
 // Stock Ledger — product-level view with expandable batch rows
 // swap for API: GET /api/inventory/stock?locationId=<id>
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import {
-  ChevronDown, ChevronRight, AlertTriangle, Package,
-  TrendingDown, Filter, Search,
+  ChevronDown, ChevronRight, AlertTriangle,
+  Package, TrendingDown, Filter,
 } from 'lucide-react';
 import { mockStores } from '../../data/mockStores';
 import { mockBatches } from '../../data/mockBatches';
 import { productById } from '../../data/mockProducts';
 import { useAuth } from '../../context/AuthContext';
+import Badge from '../../components/ui/Badge';
+import { SearchInput, Select } from '../../components/ui/Input';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
+import EmptyState from '../../components/ui/EmptyState';
 import type { Batch } from '../../types/entities';
 
 // ── Location registry (stores + warehouses referenced in batches) ─────────────
@@ -60,13 +64,13 @@ export default function StockLedger({ extraBatches = [] }: StockLedgerProps) {
   const { currentStore } = useAuth();
 
   const defaultLocation = currentStore?.id ?? WAREHOUSES[0]?.id ?? 'all';
-  const [locationId,       setLocationId]       = useState<string>(defaultLocation);
-  const [categoryFilter,   setCategoryFilter]   = useState('All');
-  const [search,           setSearch]           = useState('');
-  const [nearExpiryOnly,   setNearExpiryOnly]   = useState(false);
-  const [lowStockOnly,     setLowStockOnly]     = useState(false);
-  const [threshold,        setThreshold]        = useState(20);
-  const [expandedIds,      setExpandedIds]      = useState<Set<string>>(new Set());
+  const [locationId,     setLocationId]     = useState<string>(defaultLocation);
+  const [categoryFilter, setCategoryFilter] = useState('All');
+  const [search,         setSearch]         = useState('');
+  const [nearExpiryOnly, setNearExpiryOnly] = useState(false);
+  const [lowStockOnly,   setLowStockOnly]   = useState(false);
+  const [threshold,      setThreshold]      = useState(20);
+  const [expandedIds,    setExpandedIds]    = useState<Set<string>>(new Set());
 
   const toggleExpand = (productId: string) => {
     setExpandedIds(prev => {
@@ -92,12 +96,16 @@ export default function StockLedger({ extraBatches = [] }: StockLedgerProps) {
       .map(([productId, batches]) => {
         const product = productById.get(productId);
         const sortedByExpiry = [...batches].sort((a, b) => a.expiryDate.localeCompare(b.expiryDate));
-        const totalAvail  = batches.reduce((s, b) => s + (b.currentQty - b.reservedQty), 0);
+        const totalAvail    = batches.reduce((s, b) => s + (b.currentQty - b.reservedQty), 0);
         const totalReserved = batches.reduce((s, b) => s + b.reservedQty, 0);
-        const oldestExpiry = sortedByExpiry[0]?.expiryDate ?? '';
+        const oldestExpiry  = sortedByExpiry[0]?.expiryDate ?? '';
         const nearExpiryCount = batches.filter(b => b.expiryDate <= NEAR_EXPIRY_DATE).length;
-        const isLowStock   = totalAvail <= threshold;
-        return { productId, product, batches: sortedByExpiry, totalAvail, totalReserved, oldestExpiry, nearExpiryCount, hasNearExpiry: nearExpiryCount > 0, isLowStock };
+        const isLowStock    = totalAvail <= threshold;
+        return {
+          productId, product, batches: sortedByExpiry,
+          totalAvail, totalReserved, oldestExpiry, nearExpiryCount,
+          hasNearExpiry: nearExpiryCount > 0, isLowStock,
+        };
       })
       .filter(row => {
         if (!row.product) return false;
@@ -117,31 +125,32 @@ export default function StockLedger({ extraBatches = [] }: StockLedgerProps) {
   return (
     <div className="space-y-4">
 
-      {/* ── Controls row ───────────────────────────────────────────────── */}
+      {/* ── Controls row ─────────────────────────────────────────────────── */}
       <div className="flex flex-wrap gap-2 items-center">
+
         {/* Location selector */}
-        <select
-          value={locationId}
-          onChange={e => setLocationId(e.target.value)}
-          className="text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        >
-          <option value="all">All Locations</option>
-          <optgroup label="Stores">
-            {STORE_LOCATIONS.map(l => <option key={l.id} value={l.id}>{l.name.replace('Bharat Agri Store – ', '')}</option>)}
-          </optgroup>
-          <optgroup label="Warehouses">
-            {WAREHOUSES.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-          </optgroup>
-        </select>
+        <div style={{ width: '220px' }}>
+          <Select value={locationId} onChange={setLocationId}>
+            <option value="all">All Locations</option>
+            <optgroup label="Stores">
+              {STORE_LOCATIONS.map(l => (
+                <option key={l.id} value={l.id}>{l.name.replace('Bharat Agri Store – ', '')}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Warehouses">
+              {WAREHOUSES.map(l => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+            </optgroup>
+          </Select>
+        </div>
 
         {/* Search */}
-        <div className="relative flex-1 min-w-52">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
+        <div className="flex-1 min-w-52">
+          <SearchInput
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={setSearch}
             placeholder="Search product or SKU…"
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
         </div>
 
@@ -151,11 +160,18 @@ export default function StockLedger({ extraBatches = [] }: StockLedgerProps) {
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
-                categoryFilter === cat
-                  ? 'bg-emerald-600 text-white border-emerald-600'
-                  : 'border-gray-200 text-gray-600 hover:bg-gray-50 bg-white'
-              }`}
+              style={{
+                padding: '4px 12px',
+                fontSize: '12px',
+                fontWeight: 500,
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border)',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                backgroundColor: categoryFilter === cat ? 'var(--green-500)' : 'var(--bg-card)',
+                color: categoryFilter === cat ? '#ffffff' : 'var(--text-secondary)',
+                borderColor: categoryFilter === cat ? 'var(--green-500)' : 'var(--border)',
+              }}
             >
               {cat}
             </button>
@@ -166,30 +182,80 @@ export default function StockLedger({ extraBatches = [] }: StockLedgerProps) {
         <div className="flex items-center gap-3 ml-auto">
           <button
             onClick={() => setNearExpiryOnly(v => !v)}
-            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
-              nearExpiryOnly
-                ? 'bg-orange-100 text-orange-700 border-orange-300'
-                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-            }`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '12px',
+              fontWeight: 600,
+              padding: '4px 12px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+              backgroundColor: nearExpiryOnly ? '#fff7ed' : 'var(--bg-card)',
+              color: nearExpiryOnly ? '#c2410c' : 'var(--text-secondary)',
+              borderColor: nearExpiryOnly ? '#fdba74' : 'var(--border)',
+            }}
           >
             <AlertTriangle size={12} />
-            Near Expiry {nearExpiryTotal > 0 && <span className="bg-orange-500 text-white rounded-full w-4 h-4 text-[9px] flex items-center justify-center">{nearExpiryTotal}</span>}
+            Near Expiry
+            {nearExpiryTotal > 0 && (
+              <span style={{
+                backgroundColor: '#f97316',
+                color: '#fff',
+                borderRadius: '9999px',
+                width: '16px',
+                height: '16px',
+                fontSize: '9px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                {nearExpiryTotal}
+              </span>
+            )}
           </button>
 
           <button
             onClick={() => setLowStockOnly(v => !v)}
-            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
-              lowStockOnly
-                ? 'bg-red-100 text-red-700 border-red-300'
-                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-            }`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '12px',
+              fontWeight: 600,
+              padding: '4px 12px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+              backgroundColor: lowStockOnly ? '#fef2f2' : 'var(--bg-card)',
+              color: lowStockOnly ? '#b91c1c' : 'var(--text-secondary)',
+              borderColor: lowStockOnly ? '#fca5a5' : 'var(--border)',
+            }}
           >
             <TrendingDown size={12} />
-            Low Stock {lowStockTotal > 0 && <span className="bg-red-500 text-white rounded-full w-4 h-4 text-[9px] flex items-center justify-center">{lowStockTotal}</span>}
+            Low Stock
+            {lowStockTotal > 0 && (
+              <span style={{
+                backgroundColor: '#ef4444',
+                color: '#fff',
+                borderRadius: '9999px',
+                width: '16px',
+                height: '16px',
+                fontSize: '9px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                {lowStockTotal}
+              </span>
+            )}
           </button>
 
           {lowStockOnly && (
-            <div className="flex items-center gap-1 text-xs text-gray-500">
+            <div className="flex items-center gap-1" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
               <Filter size={11} />
               <span>Threshold:</span>
               <input
@@ -197,172 +263,219 @@ export default function StockLedger({ extraBatches = [] }: StockLedgerProps) {
                 min={1}
                 value={threshold}
                 onChange={e => setThreshold(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-14 border border-gray-200 rounded-lg px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                style={{
+                  width: '52px',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '3px 6px',
+                  textAlign: 'center',
+                  fontSize: '12px',
+                  outline: 'none',
+                  backgroundColor: 'var(--bg-card)',
+                  color: 'var(--text-primary)',
+                }}
               />
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Summary strip ──────────────────────────────────────────────── */}
-      <div className="flex items-center gap-4 text-xs text-gray-500">
-        <span className="font-medium text-gray-700">{rows.length} products</span>
+      {/* ── Summary strip ─────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-4" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+        <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{rows.length} products</span>
         {nearExpiryTotal > 0 && (
-          <span className="text-orange-600 font-medium flex items-center gap-1">
+          <span style={{ color: '#c2410c', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
             <AlertTriangle size={11} /> {nearExpiryTotal} near expiry (&lt;30 days)
           </span>
         )}
         {lowStockTotal > 0 && (
-          <span className="text-red-600 font-medium flex items-center gap-1">
+          <span style={{ color: '#b91c1c', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
             <TrendingDown size={11} /> {lowStockTotal} below threshold ({threshold})
           </span>
         )}
       </div>
 
-      {/* ── Table ──────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        {/* Header */}
-        <div className="grid grid-cols-[2fr_1fr_0.8fr_0.8fr_1fr_1.2fr_0.5fr] px-4 py-3 border-b border-gray-100 bg-gray-50 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
-          <span>Product</span>
-          <span>Category</span>
-          <span className="text-right">Available</span>
-          <span className="text-right">Reserved</span>
-          <span>Batches</span>
-          <span>Oldest Expiry</span>
-          <span></span>
-        </div>
-
-        {rows.length === 0 ? (
-          <div className="py-16 text-center">
-            <Package size={28} className="text-gray-300 mx-auto mb-3" />
-            <p className="text-sm text-gray-400">No stock matches the current filters.</p>
-          </div>
-        ) : (
-          <div>
+      {/* ── Table ─────────────────────────────────────────────────────────── */}
+      {rows.length === 0 ? (
+        <EmptyState
+          icon={Package}
+          iconColor="#94a3b8"
+          title="No stock matches the current filters"
+          subtitle="Try adjusting your search, location, or filter settings."
+        />
+      ) : (
+        <TableWrap>
+          <thead>
+            <tr>
+              <Th>Product</Th>
+              <Th>Category</Th>
+              <Th right>Available</Th>
+              <Th right>Reserved</Th>
+              <Th>Batches</Th>
+              <Th>Oldest Expiry</Th>
+              <Th>Status</Th>
+              <Th></Th>
+            </tr>
+          </thead>
+          <tbody>
             {rows.map(row => {
               if (!row.product) return null;
               const isExpanded = expandedIds.has(row.productId);
               const days = row.oldestExpiry ? daysUntil(row.oldestExpiry) : null;
 
               return (
-                <div key={row.productId} className="border-b border-gray-50 last:border-0">
+                <Fragment key={row.productId}>
                   {/* Product row */}
-                  <div
-                    className="grid grid-cols-[2fr_1fr_0.8fr_0.8fr_1fr_1.2fr_0.5fr] px-4 py-3 items-center hover:bg-gray-50/70 cursor-pointer transition-colors"
+                  <Tr
                     onClick={() => toggleExpand(row.productId)}
                   >
-                    {/* Product name */}
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-xs font-semibold text-gray-800 truncate">{row.product.name}</p>
+                    <Td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div>
+                          <div style={{ fontWeight: 500, fontSize: '13px' }}>{row.product.name}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                            {row.product.sku}
+                          </div>
+                        </div>
                         {row.isLowStock && (
-                          <span className="text-[9px] font-bold bg-red-100 text-red-600 px-1 py-0.5 rounded flex-shrink-0">Low</span>
+                          <Badge variant="red">Low</Badge>
                         )}
                       </div>
-                      <p className="text-[10px] text-gray-400 font-mono mt-0.5">{row.product.sku}</p>
-                    </div>
-
-                    {/* Category */}
-                    <p className="text-xs text-gray-600">{row.product.category}</p>
-
-                    {/* Available */}
-                    <p className={`text-right text-xs font-bold tabular-nums ${row.isLowStock ? 'text-red-600' : 'text-gray-900'}`}>
-                      {row.totalAvail} <span className="font-normal text-gray-400">{row.product.unit}</span>
-                    </p>
-
-                    {/* Reserved */}
-                    <p className="text-right text-xs tabular-nums text-gray-500">
-                      {row.totalReserved > 0 ? <span className="text-amber-600 font-medium">{row.totalReserved}</span> : '—'}
-                    </p>
-
-                    {/* Batch count + near-expiry */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-600">{row.batches.length} batch{row.batches.length !== 1 ? 'es' : ''}</span>
-                      {row.hasNearExpiry && (
-                        <span title={`${row.nearExpiryCount} batch(es) near expiry`}>
-                          <AlertTriangle size={12} className="text-orange-500" />
+                    </Td>
+                    <Td muted>{row.product.category}</Td>
+                    <Td right>
+                      <span style={{
+                        fontWeight: 700,
+                        color: row.isLowStock ? '#dc2626' : 'var(--text-primary)',
+                      }}>
+                        {row.totalAvail}
+                      </span>
+                      {' '}
+                      <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{row.product.unit}</span>
+                    </Td>
+                    <Td right>
+                      {row.totalReserved > 0
+                        ? <span style={{ color: '#d97706', fontWeight: 500 }}>{row.totalReserved}</span>
+                        : <span style={{ color: 'var(--text-muted)' }}>—</span>
+                      }
+                    </Td>
+                    <Td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '13px' }}>
+                          {row.batches.length} batch{row.batches.length !== 1 ? 'es' : ''}
                         </span>
-                      )}
-                    </div>
-
-                    {/* Oldest expiry */}
-                    <div>
+                        {row.hasNearExpiry && (
+                          <span title={`${row.nearExpiryCount} batch(es) near expiry`}>
+                            <AlertTriangle size={12} style={{ color: '#f97316' }} />
+                          </span>
+                        )}
+                      </div>
+                    </Td>
+                    <Td>
                       {row.oldestExpiry ? (
-                        <span className={`text-xs font-medium ${days !== null && days <= 30 ? 'text-orange-600' : 'text-gray-600'}`}>
+                        <span style={{
+                          fontSize: '13px',
+                          fontWeight: 500,
+                          color: days !== null && days <= 30 ? '#c2410c' : 'var(--text-primary)',
+                        }}>
                           {row.oldestExpiry}
                           {days !== null && days <= 30 && (
-                            <span className="ml-1 text-[10px] text-orange-500 font-normal">({days}d)</span>
+                            <span style={{ marginLeft: '4px', fontSize: '11px', color: '#f97316', fontWeight: 400 }}>
+                              ({days}d)
+                            </span>
                           )}
                         </span>
-                      ) : '—'}
-                    </div>
-
-                    {/* Expand icon */}
-                    <div className="flex justify-end">
-                      {isExpanded
-                        ? <ChevronDown size={14} className="text-gray-400" />
-                        : <ChevronRight size={14} className="text-gray-400" />
+                      ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                    </Td>
+                    <Td>
+                      {row.hasNearExpiry
+                        ? <Badge variant="amber">Near Expiry</Badge>
+                        : row.isLowStock
+                          ? <Badge variant="red">Low Stock</Badge>
+                          : <Badge variant="green">OK</Badge>
                       }
-                    </div>
-                  </div>
+                    </Td>
+                    <Td>
+                      {isExpanded
+                        ? <ChevronDown size={14} style={{ color: 'var(--text-muted)' }} />
+                        : <ChevronRight size={14} style={{ color: 'var(--text-muted)' }} />
+                      }
+                    </Td>
+                  </Tr>
 
                   {/* Expanded batch rows */}
                   {isExpanded && (
-                    <div className="bg-gray-50 border-t border-gray-100 px-4 py-2">
-                      <table className="w-full text-[11px]">
-                        <thead>
-                          <tr className="text-gray-400 border-b border-gray-200">
-                            <th className="text-left py-1.5 pr-3 font-medium">Batch No.</th>
-                            <th className="text-right pr-3 font-medium">Avail.</th>
-                            <th className="text-right pr-3 font-medium">Reserved</th>
-                            <th className="text-left pr-3 font-medium">Mfg Date</th>
-                            <th className="text-left pr-3 font-medium">Expiry</th>
-                            <th className="text-left pr-3 font-medium">Location</th>
-                            <th className="text-right font-medium">Purchase ₹</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                          {row.batches.map(b => {
-                            const bDays = daysUntil(b.expiryDate);
-                            const bNE   = b.expiryDate <= NEAR_EXPIRY_DATE;
-                            const loc   = b.storeId
-                              ? mockStores.find(s => s.id === b.storeId)?.code ?? b.storeId
-                              : WAREHOUSE_NAMES[b.warehouseId ?? ''] ?? b.warehouseId ?? '—';
-                            return (
-                              <tr key={b.id} className="hover:bg-gray-100/60 transition-colors">
-                                <td className="py-1.5 pr-3 font-mono font-medium text-gray-700">{b.batchNo}</td>
-                                <td className="pr-3 text-right font-semibold text-gray-800 tabular-nums">{b.currentQty - b.reservedQty}</td>
-                                <td className="pr-3 text-right tabular-nums text-gray-500">
-                                  {b.reservedQty > 0 ? <span className="text-amber-600">{b.reservedQty}</span> : '—'}
-                                </td>
-                                <td className="pr-3 text-gray-600 tabular-nums">{b.mfgDate}</td>
-                                <td className="pr-3">
-                                  <span className={bNE ? 'text-orange-600 font-medium' : 'text-gray-600'}>
-                                    {b.expiryDate}
-                                    {bNE && <span className="ml-1 text-orange-400">({bDays}d)</span>}
-                                  </span>
-                                </td>
-                                <td className="pr-3 text-gray-500 font-mono">{loc}</td>
-                                <td className="text-right text-gray-700 tabular-nums">₹{b.purchasePricePerUnit.toLocaleString('en-IN')}</td>
+                    <tr key={`${row.productId}-expanded`}>
+                      <td
+                        colSpan={8}
+                        style={{
+                          padding: 0,
+                          backgroundColor: '#f8fafc',
+                          borderBottom: '1px solid var(--border)',
+                        }}
+                      >
+                        <div style={{ padding: '8px 16px 12px' }}>
+                          <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
+                            <thead>
+                              <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>
+                                <th style={{ textAlign: 'left', padding: '6px 12px 6px 0', fontWeight: 500 }}>Batch No.</th>
+                                <th style={{ textAlign: 'right', padding: '6px 12px 6px 0', fontWeight: 500 }}>Avail.</th>
+                                <th style={{ textAlign: 'right', padding: '6px 12px 6px 0', fontWeight: 500 }}>Reserved</th>
+                                <th style={{ textAlign: 'left', padding: '6px 12px 6px 0', fontWeight: 500 }}>Mfg Date</th>
+                                <th style={{ textAlign: 'left', padding: '6px 12px 6px 0', fontWeight: 500 }}>Expiry</th>
+                                <th style={{ textAlign: 'left', padding: '6px 12px 6px 0', fontWeight: 500 }}>Location</th>
+                                <th style={{ textAlign: 'right', padding: '6px 0', fontWeight: 500 }}>Purchase ₹</th>
                               </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
+                            </thead>
+                            <tbody>
+                              {row.batches.map(b => {
+                                const bDays = daysUntil(b.expiryDate);
+                                const bNE   = b.expiryDate <= NEAR_EXPIRY_DATE;
+                                const loc   = b.storeId
+                                  ? mockStores.find(s => s.id === b.storeId)?.code ?? b.storeId
+                                  : WAREHOUSE_NAMES[b.warehouseId ?? ''] ?? b.warehouseId ?? '—';
+                                return (
+                                  <tr
+                                    key={b.id}
+                                    style={{ borderBottom: '1px solid var(--border)' }}
+                                    onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.backgroundColor = 'rgba(0,0,0,0.02)'; }}
+                                    onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.backgroundColor = ''; }}
+                                  >
+                                    <td style={{ padding: '6px 12px 6px 0', fontFamily: 'monospace', fontWeight: 500, color: 'var(--text-primary)' }}>{b.batchNo}</td>
+                                    <td style={{ padding: '6px 12px 6px 0', textAlign: 'right', fontWeight: 600, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{b.currentQty - b.reservedQty}</td>
+                                    <td style={{ padding: '6px 12px 6px 0', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: b.reservedQty > 0 ? '#d97706' : 'var(--text-muted)' }}>
+                                      {b.reservedQty > 0 ? b.reservedQty : '—'}
+                                    </td>
+                                    <td style={{ padding: '6px 12px 6px 0', color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{b.mfgDate}</td>
+                                    <td style={{ padding: '6px 12px 6px 0', color: bNE ? '#c2410c' : 'var(--text-secondary)', fontWeight: bNE ? 500 : 400 }}>
+                                      {b.expiryDate}
+                                      {bNE && <span style={{ marginLeft: '4px', color: '#f97316' }}>({bDays}d)</span>}
+                                    </td>
+                                    <td style={{ padding: '6px 12px 6px 0', fontFamily: 'monospace', color: 'var(--text-muted)' }}>{loc}</td>
+                                    <td style={{ padding: '6px 0', textAlign: 'right', color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>₹{b.purchasePricePerUnit.toLocaleString('en-IN')}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </td>
+                    </tr>
                   )}
-                </div>
+                </Fragment>
               );
             })}
-          </div>
-        )}
+          </tbody>
+        </TableWrap>
+      )}
 
-        {/* Footer */}
-        <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50 text-[11px] text-gray-400">
+      {/* Footer */}
+      {rows.length > 0 && (
+        <div style={{ fontSize: '11px', color: 'var(--text-muted)', paddingTop: '4px' }}>
           {rows.length} products · {rows.reduce((s, r) => s + r.batches.length, 0)} batches ·{' '}
           {ALL_LOCATIONS.find(l => l.id === locationId)?.name ?? 'All Locations'}
         </div>
-      </div>
+      )}
     </div>
   );
 }

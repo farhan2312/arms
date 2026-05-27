@@ -1,7 +1,11 @@
 import { useState } from 'react';
-import { Search, Star } from 'lucide-react';
+import { Star, Users, TrendingUp } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
+import Tabs from '../../components/ui/Tabs';
 import Badge, { statusVariant } from '../../components/ui/Badge';
+import KpiCard from '../../components/ui/KpiCard';
+import { SearchInput } from '../../components/ui/Input';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
 import { mockFarmers, farmerById } from '../../data/mockFarmers';
 import { mockLoyaltyWallets, walletByFarmerId } from '../../data/mockLoyaltyWallets';
 import { mockSaleTransactions } from '../../data/mockSaleTransactions';
@@ -36,6 +40,11 @@ const TIER_COLORS: Record<string, 'green' | 'gray' | 'yellow' | 'orange'> = {
   Platinum: 'orange',
 };
 
+const LOYALTY_TABS = [
+  { id: 'leaderboard',   label: 'Leaderboard' },
+  { id: 'transactions',  label: 'Recent Events' },
+];
+
 export default function LoyaltyPage() {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<'leaderboard' | 'transactions'>('leaderboard');
@@ -59,138 +68,133 @@ export default function LoyaltyPage() {
         subtitle="Farmer reward points — earning, redemption and leaderboard"
       />
 
-      {/* Summary */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Total Active Points</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">
-            {totalPoints.toLocaleString('en-IN')}
-          </p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Points Redeemed MTD</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{totalRedeemed.toLocaleString('en-IN')}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Enrolled Farmers</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{mockLoyaltyWallets.length}</p>
-        </div>
+        <KpiCard
+          label="Total Active Points"
+          value={totalPoints.toLocaleString('en-IN')}
+          icon={Star}
+          iconBg="#fef9c3"
+          iconColor="#ca8a04"
+        />
+        <KpiCard
+          label="Points Redeemed MTD"
+          value={totalRedeemed.toLocaleString('en-IN')}
+          icon={TrendingUp}
+          iconBg="#dbeafe"
+          iconColor="#1d4ed8"
+        />
+        <KpiCard
+          label="Enrolled Farmers"
+          value={mockLoyaltyWallets.length}
+          icon={Users}
+          iconBg="#dcfce7"
+          iconColor="#16a34a"
+        />
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-5 bg-gray-100 p-1 rounded-xl w-fit">
-        {(['leaderboard', 'transactions'] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-xs font-semibold rounded-lg capitalize transition-colors ${
-              tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {t === 'leaderboard' ? 'Leaderboard' : 'Recent Events'}
-          </button>
-        ))}
+      <div style={{ marginBottom: '20px' }}>
+        <Tabs
+          tabs={LOYALTY_TABS}
+          activeTab={tab}
+          onTabChange={(id) => setTab(id as 'leaderboard' | 'transactions')}
+        />
       </div>
 
       {/* Search */}
-      <div className="relative mb-5 max-w-sm">
-        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input
+      <div className="mb-5" style={{ maxWidth: '320px' }}>
+        <SearchInput
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={setSearch}
           placeholder={tab === 'leaderboard' ? 'Search farmers...' : 'Search events...'}
-          className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
         />
       </div>
 
       {tab === 'leaderboard' ? (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide w-12">#</th>
-                <th className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Farmer</th>
-                <th className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Location</th>
-                <th className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Tier</th>
-                <th className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Crops</th>
-                <th className="text-right px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Points</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filteredLeaderboard.map(({ farmer, wallet }, idx) => (
-                <tr key={farmer.id} className={`hover:bg-gray-50 transition-colors ${idx < 3 ? 'bg-amber-50/40' : ''}`}>
-                  <td className="px-5 py-3.5">
-                    {idx === 0 ? (
-                      <span className="text-lg">🥇</span>
-                    ) : idx === 1 ? (
-                      <span className="text-lg">🥈</span>
-                    ) : idx === 2 ? (
-                      <span className="text-lg">🥉</span>
-                    ) : (
-                      <span className="text-xs font-bold text-gray-400">{idx + 1}</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <p className="font-medium text-gray-800 text-xs">{farmer.name}</p>
-                    <p className="text-gray-400 text-[11px]">{farmer.mobile}</p>
-                  </td>
-                  <td className="px-5 py-3.5 text-xs text-gray-600">
-                    {farmer.address.village ? `${farmer.address.village}, ` : ''}{farmer.address.district}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    {wallet && <Badge label={wallet.tier} variant={TIER_COLORS[wallet.tier] ?? 'gray'} />}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex flex-wrap gap-1">
-                      {farmer.cropTypes.slice(0, 2).map((c) => (
-                        <span key={c} className="bg-green-50 text-green-700 text-[10px] px-1.5 py-0.5 rounded-full font-medium">{c}</span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-5 py-3.5 text-right">
-                    <span className="flex items-center justify-end gap-1 font-bold text-emerald-700 text-sm">
-                      <Star size={12} className="fill-emerald-500 text-emerald-500" />
-                      {wallet?.currentPoints.toLocaleString('en-IN') ?? '—'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <TableWrap>
+          <thead>
+            <tr>
+              <Th>#</Th>
+              <Th>Farmer</Th>
+              <Th>Location</Th>
+              <Th>Tier</Th>
+              <Th>Crops</Th>
+              <Th right>Points</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredLeaderboard.map(({ farmer, wallet }, idx) => (
+              <Tr key={farmer.id} className={idx < 3 ? 'bg-amber-50/40' : ''}>
+                <Td>
+                  {idx === 0 ? (
+                    <span className="text-lg">🥇</span>
+                  ) : idx === 1 ? (
+                    <span className="text-lg">🥈</span>
+                  ) : idx === 2 ? (
+                    <span className="text-lg">🥉</span>
+                  ) : (
+                    <span className="text-xs font-bold text-gray-400">{idx + 1}</span>
+                  )}
+                </Td>
+                <Td>
+                  <p className="font-medium text-gray-800 text-xs">{farmer.name}</p>
+                  <p className="text-gray-400 text-[11px]">{farmer.mobile}</p>
+                </Td>
+                <Td muted>
+                  {farmer.address.village ? `${farmer.address.village}, ` : ''}{farmer.address.district}
+                </Td>
+                <Td>
+                  {wallet && <Badge label={wallet.tier} variant={TIER_COLORS[wallet.tier] ?? 'gray'} />}
+                </Td>
+                <Td>
+                  <div className="flex flex-wrap gap-1">
+                    {farmer.cropTypes.slice(0, 2).map((c) => (
+                      <span key={c} className="bg-green-50 text-green-700 text-[10px] px-1.5 py-0.5 rounded-full font-medium">{c}</span>
+                    ))}
+                  </div>
+                </Td>
+                <Td right>
+                  <span className="flex items-center justify-end gap-1 font-bold text-emerald-700 text-sm">
+                    <Star size={12} className="fill-emerald-500 text-emerald-500" />
+                    {wallet?.currentPoints.toLocaleString('en-IN') ?? '—'}
+                  </span>
+                </Td>
+              </Tr>
+            ))}
+          </tbody>
+        </TableWrap>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Farmer</th>
-                <th className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Type</th>
-                <th className="text-right px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Points</th>
-                <th className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Invoice Ref.</th>
-                <th className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filteredEvents.map((event) => (
-                <tr key={event.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-5 py-3.5 text-xs font-medium text-gray-800">{event.farmerName}</td>
-                  <td className="px-5 py-3.5">
-                    <Badge label={event.type} variant={statusVariant(event.type)} />
-                  </td>
-                  <td className="px-5 py-3.5 text-right">
-                    <span className={`text-sm font-bold ${event.type === 'Earn' || event.type === 'Bonus' ? 'text-emerald-600' : 'text-blue-600'}`}>
-                      {event.type === 'Earn' || event.type === 'Bonus' ? '+' : '-'}{event.points}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5 text-xs font-mono text-gray-500">{event.ref}</td>
-                  <td className="px-5 py-3.5 text-xs text-gray-500">
-                    {new Date(event.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <TableWrap>
+          <thead>
+            <tr>
+              <Th>Farmer</Th>
+              <Th>Type</Th>
+              <Th right>Points</Th>
+              <Th>Invoice Ref.</Th>
+              <Th>Date</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredEvents.map((event) => (
+              <Tr key={event.id}>
+                <Td bold>{event.farmerName}</Td>
+                <Td>
+                  <Badge label={event.type} variant={statusVariant(event.type)} />
+                </Td>
+                <Td right>
+                  <span className={`text-sm font-bold ${event.type === 'Earn' || event.type === 'Bonus' ? 'text-emerald-600' : 'text-blue-600'}`}>
+                    {event.type === 'Earn' || event.type === 'Bonus' ? '+' : '-'}{event.points}
+                  </span>
+                </Td>
+                <Td mono muted>{event.ref}</Td>
+                <Td muted>
+                  {new Date(event.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </Td>
+              </Tr>
+            ))}
+          </tbody>
+        </TableWrap>
       )}
     </div>
   );

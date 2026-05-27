@@ -6,6 +6,7 @@ import {
   CheckCircle2, Flag, AlertTriangle,
   TrendingUp, Coins, Users, ChevronDown,
 } from 'lucide-react';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
 import { MOCK_USERS } from '../../data/mockUsers';
 import { taRate, SEED_JOURNEYS, type Journey } from './JourneyLog';
 import type { UserRole } from '../../types/roles';
@@ -283,23 +284,23 @@ export default function TADASummary() {
                       <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
                         Journey Breakdown · {row.name}
                       </p>
-                      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-                        <table className="w-full text-[11px]">
+                      <div className="overflow-x-auto">
+                        <TableWrap>
                           <thead>
-                            <tr className="border-b border-gray-100 text-gray-400">
-                              <th className="text-left px-3 py-2 font-medium">Date</th>
-                              <th className="text-left px-3 py-2 font-medium">Route</th>
-                              <th className="text-left px-3 py-2 font-medium">Mode</th>
-                              <th className="text-right px-3 py-2 font-medium">Claimed KM</th>
-                              <th className="text-right px-3 py-2 font-medium">Expected KM</th>
-                              <th className="text-right px-3 py-2 font-medium">Deviation</th>
-                              <th className="text-right px-3 py-2 font-medium">Rate/km</th>
-                              <th className="text-right px-3 py-2 font-medium">TA</th>
-                              <th className="text-right px-3 py-2 font-medium">DA</th>
-                              <th className="text-right px-3 py-2 font-medium">Total</th>
+                            <tr>
+                              <Th>Date</Th>
+                              <Th>Route</Th>
+                              <Th>Mode</Th>
+                              <Th right>Claimed KM</Th>
+                              <Th right>Expected KM</Th>
+                              <Th right>Deviation</Th>
+                              <Th right>Rate/km</Th>
+                              <Th right>TA</Th>
+                              <Th right>DA</Th>
+                              <Th right>Total</Th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-gray-50">
+                          <tbody>
                             {row.journeys.map(j => {
                               const expected   = EXPECTED_KM[j.id];
                               const deviationPct = expected != null
@@ -307,44 +308,43 @@ export default function TADASummary() {
                                 : null;
                               const isDeviated = deviationPct != null && deviationPct > DEVIATION_THRESHOLD * 100;
                               return (
-                                <tr key={j.id} className={isDeviated ? 'bg-red-50' : ''}>
-                                  <td className="px-3 py-2 text-gray-600 tabular-nums">{j.date}</td>
-                                  <td className="px-3 py-2 text-gray-800 font-medium">{j.from} → {j.to}</td>
-                                  <td className="px-3 py-2 text-gray-600">{j.mode}</td>
-                                  <td className="px-3 py-2 text-right tabular-nums font-semibold text-gray-800">{j.claimedDistanceKm}</td>
-                                  <td className="px-3 py-2 text-right tabular-nums text-gray-500">
+                                <Tr key={j.id} className={isDeviated ? 'bg-red-50' : ''}>
+                                  <Td mono muted>{j.date}</Td>
+                                  <Td bold>{j.from} → {j.to}</Td>
+                                  <Td muted>{j.mode}</Td>
+                                  <Td right mono bold>{j.claimedDistanceKm}</Td>
+                                  <Td right mono muted>
                                     {expected ?? <span className="text-gray-300 italic">n/a</span>}
-                                  </td>
-                                  <td className="px-3 py-2 text-right">
+                                  </Td>
+                                  <Td right>
                                     {deviationPct != null ? (
                                       <span className={`font-semibold ${isDeviated ? 'text-red-600' : 'text-gray-600'}`}>
                                         {deviationPct > 0 ? '+' : ''}{deviationPct.toFixed(1)}%
                                         {isDeviated && ' ⚠'}
                                       </span>
                                     ) : <span className="text-gray-300">—</span>}
-                                  </td>
-                                  <td className="px-3 py-2 text-right tabular-nums text-gray-500">₹{taRate(j.userRole)}</td>
-                                  <td className="px-3 py-2 text-right tabular-nums text-gray-700">{fmt(j.taAmount)}</td>
-                                  <td className="px-3 py-2 text-right tabular-nums text-gray-500">
+                                  </Td>
+                                  <Td right mono muted>₹{taRate(j.userRole)}</Td>
+                                  <Td right mono>{fmt(j.taAmount)}</Td>
+                                  <Td right mono muted>
                                     {j.daAmount > 0 ? fmt(j.daAmount) : '—'}
-                                  </td>
-                                  <td className="px-3 py-2 text-right tabular-nums font-bold text-gray-900">{fmt(j.totalClaim)}</td>
-                                </tr>
+                                  </Td>
+                                  <Td right mono bold>{fmt(j.totalClaim)}</Td>
+                                </Tr>
                               );
                             })}
                           </tbody>
                           <tfoot>
                             <tr className="border-t-2 border-gray-200 bg-gray-50">
-                              <td colSpan={3} className="px-3 py-2 font-semibold text-gray-600">Total</td>
-                              <td className="px-3 py-2 text-right font-bold text-gray-900 tabular-nums">{row.totalKm} km</td>
-                              <td colSpan={2}></td>
-                              <td></td>
-                              <td className="px-3 py-2 text-right font-bold text-gray-900 tabular-nums">{fmt(row.taAmount)}</td>
-                              <td className="px-3 py-2 text-right font-bold text-gray-900 tabular-nums">{row.daAmount > 0 ? fmt(row.daAmount) : '—'}</td>
-                              <td className="px-3 py-2 text-right font-bold text-emerald-700 tabular-nums">{fmt(row.totalClaim)}</td>
+                              <td colSpan={3} className="px-4 py-2.5 text-xs font-semibold text-gray-600">Total</td>
+                              <td className="px-4 py-2.5 text-right font-bold text-gray-900 tabular-nums text-xs">{row.totalKm} km</td>
+                              <td colSpan={3}></td>
+                              <td className="px-4 py-2.5 text-right font-bold text-gray-900 tabular-nums text-xs">{fmt(row.taAmount)}</td>
+                              <td className="px-4 py-2.5 text-right font-bold text-gray-900 tabular-nums text-xs">{row.daAmount > 0 ? fmt(row.daAmount) : '—'}</td>
+                              <td className="px-4 py-2.5 text-right font-bold text-emerald-700 tabular-nums text-xs">{fmt(row.totalClaim)}</td>
                             </tr>
                           </tfoot>
-                        </table>
+                        </TableWrap>
                       </div>
 
                       {row.hasDeviation && (

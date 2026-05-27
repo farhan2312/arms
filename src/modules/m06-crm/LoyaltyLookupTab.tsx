@@ -2,12 +2,17 @@
 // Same logic as FarmerWalletView but without the outer page wrapper / heading
 
 import { useState, useMemo } from 'react';
-import { Search, User, Star, Clock, Coins, TrendingUp, AlertCircle, Sprout } from 'lucide-react';
+import { User, Star, Clock, Coins, TrendingUp, AlertCircle, Sprout, Search } from 'lucide-react';
 import { mockFarmers } from '../../data/mockFarmers';
 import { walletByFarmerId } from '../../data/mockLoyaltyWallets';
 import { mockSaleTransactions } from '../../data/mockSaleTransactions';
 import { storeById } from '../../data/mockStores';
 import type { LoyaltyTier } from '../../types/loyalty';
+import { SearchInput } from '../../components/ui/Input';
+import Badge, { getTierVariant } from '../../components/ui/Badge';
+import { Card } from '../../components/ui/Card';
+import EmptyState from '../../components/ui/EmptyState';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
 
 // ── Tier config ───────────────────────────────────────────────────────────────
 
@@ -103,14 +108,10 @@ export default function LoyaltyLookupTab() {
 
       {/* Search input */}
       <div className="relative">
-        <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input
-          type="tel"
+        <SearchInput
           value={query}
-          onChange={e => setQuery(e.target.value)}
+          onChange={setQuery}
           placeholder="Enter farmer's mobile number (+91 or 10-digit)"
-          className="w-full pl-10 pr-4 py-3 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
-          autoFocus
         />
         {normalised.length >= 10 && !farmer && (
           <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
@@ -141,9 +142,7 @@ export default function LoyaltyLookupTab() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-base font-bold text-gray-900">{farmer.name}</h3>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${style.badge}`}>
-                    {wallet.tier}
-                  </span>
+                  <Badge variant={getTierVariant(wallet.tier)}>{wallet.tier}</Badge>
                   {farmer.kycStatus === 'Verified' && (
                     <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">KYC ✓</span>
                   )}
@@ -199,27 +198,33 @@ export default function LoyaltyLookupTab() {
 
           {/* Stat chips */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white rounded-xl border border-gray-200 px-3 py-3 text-center">
-              <Coins size={14} className="text-emerald-500 mx-auto mb-1" />
-              <p className="text-[10px] text-gray-400">Lifetime Earned</p>
-              <p className="text-sm font-bold text-gray-800">{wallet.lifetimePoints.toLocaleString('en-IN')}</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 px-3 py-3 text-center">
-              <Star size={14} className="text-amber-500 mx-auto mb-1" />
-              <p className="text-[10px] text-gray-400">Current Balance</p>
-              <p className="text-sm font-bold text-gray-800">{wallet.currentPoints.toLocaleString('en-IN')}</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 px-3 py-3 text-center">
-              <TrendingUp size={14} className="text-blue-500 mx-auto mb-1" />
-              <p className="text-[10px] text-gray-400">To Next Tier</p>
-              <p className="text-sm font-bold text-gray-800">
-                {wallet.tier === 'Platinum' ? '—' : wallet.pointsToNextTier.toLocaleString('en-IN')}
-              </p>
-            </div>
+            <Card padding="12px">
+              <div className="text-center">
+                <Coins size={14} className="text-emerald-500 mx-auto mb-1" />
+                <p className="text-[10px] text-gray-400">Lifetime Earned</p>
+                <p className="text-sm font-bold text-gray-800">{wallet.lifetimePoints.toLocaleString('en-IN')}</p>
+              </div>
+            </Card>
+            <Card padding="12px">
+              <div className="text-center">
+                <Star size={14} className="text-amber-500 mx-auto mb-1" />
+                <p className="text-[10px] text-gray-400">Current Balance</p>
+                <p className="text-sm font-bold text-gray-800">{wallet.currentPoints.toLocaleString('en-IN')}</p>
+              </div>
+            </Card>
+            <Card padding="12px">
+              <div className="text-center">
+                <TrendingUp size={14} className="text-blue-500 mx-auto mb-1" />
+                <p className="text-[10px] text-gray-400">To Next Tier</p>
+                <p className="text-sm font-bold text-gray-800">
+                  {wallet.tier === 'Platinum' ? '—' : wallet.pointsToNextTier.toLocaleString('en-IN')}
+                </p>
+              </div>
+            </Card>
           </div>
 
           {/* Transaction history */}
-          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <Card padding="0">
             <div className="px-5 py-4 border-b border-gray-100">
               <h3 className="text-sm font-semibold text-gray-800">Transaction History</h3>
               <p className="text-[11px] text-gray-400 mt-0.5">{history.length} events</p>
@@ -230,53 +235,53 @@ export default function LoyaltyLookupTab() {
                 <p className="text-xs text-gray-400">No loyalty transactions yet</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-gray-50 text-gray-400">
-                      <th className="text-left px-4 py-2.5 font-medium">Date</th>
-                      <th className="text-left px-4 py-2.5 font-medium">Type</th>
-                      <th className="text-right px-4 py-2.5 font-medium">Points</th>
-                      <th className="text-left px-4 py-2.5 font-medium">Invoice Ref</th>
-                      <th className="text-left px-4 py-2.5 font-medium">Store</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {history.map((row, i) => {
-                      const s = EVENT_STYLE[row.type];
-                      return (
-                        <tr key={i} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-2.5 text-gray-600 tabular-nums">{row.date}</td>
-                          <td className="px-4 py-2.5">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.bg}`}>
-                              {row.type}
-                            </span>
-                          </td>
-                          <td className={`px-4 py-2.5 text-right font-semibold tabular-nums ${s.color}`}>
+              <TableWrap>
+                <thead>
+                  <tr>
+                    <Th>Date</Th>
+                    <Th>Type</Th>
+                    <Th right>Points</Th>
+                    <Th>Invoice Ref</Th>
+                    <Th>Store</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((row, i) => {
+                    const s = EVENT_STYLE[row.type];
+                    return (
+                      <Tr key={i}>
+                        <Td muted>{row.date}</Td>
+                        <Td>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.bg}`}>
+                            {row.type}
+                          </span>
+                        </Td>
+                        <Td right>
+                          <span className={`font-semibold tabular-nums ${s.color}`}>
                             {s.sign}{row.points.toLocaleString('en-IN')}
-                          </td>
-                          <td className="px-4 py-2.5 font-mono text-gray-500 text-[11px]">{row.invoiceRef}</td>
-                          <td className="px-4 py-2.5 text-gray-600 max-w-[180px] truncate">{row.store}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                          </span>
+                        </Td>
+                        <Td mono>{row.invoiceRef}</Td>
+                        <Td>
+                          <span className="max-w-[180px] truncate block text-gray-600">{row.store}</span>
+                        </Td>
+                      </Tr>
+                    );
+                  })}
+                </tbody>
+              </TableWrap>
             )}
-          </div>
+          </Card>
         </div>
       )}
 
       {/* Empty state — no query yet */}
       {query.length < 3 && (
-        <div className="text-center py-16">
-          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-            <Search size={24} className="text-gray-300" />
-          </div>
-          <p className="text-sm font-medium text-gray-500">Enter a 10-digit mobile number</p>
-          <p className="text-xs text-gray-400 mt-1">to look up a farmer's loyalty wallet</p>
-        </div>
+        <EmptyState
+          icon={Search}
+          title="Enter a 10-digit mobile number"
+          subtitle="to look up a farmer's loyalty wallet"
+        />
       )}
     </div>
   );

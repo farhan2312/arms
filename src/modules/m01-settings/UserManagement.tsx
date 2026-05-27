@@ -7,6 +7,11 @@ import type { User, UserRole } from '../../types/roles';
 import { MOCK_USERS } from '../../data/mockUsers';
 import { mockStores } from '../../data/mockStores';
 import { mockRetailers } from '../../data/mockRetailers';
+import Button from '../../components/ui/Button';
+import Badge from '../../components/ui/Badge';
+import type { BadgeVariant } from '../../components/ui/Badge';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
+import { useToast } from '../../hooks/useToast';
 
 const ALL_ROLES: UserRole[] = [
   'SuperAdmin', 'Admin', 'StoreIncharge', 'Cashier',
@@ -14,17 +19,17 @@ const ALL_ROLES: UserRole[] = [
   'OperationsHead', 'WarehouseManager', 'Finance',
 ];
 
-const ROLE_BADGE: Record<UserRole, string> = {
-  SuperAdmin:        'bg-red-100 text-red-700',
-  Admin:             'bg-emerald-100 text-emerald-700',
-  StoreIncharge:     'bg-blue-100 text-blue-700',
-  Cashier:           'bg-sky-100 text-sky-700',
-  BDM:               'bg-purple-100 text-purple-700',
-  FieldAgent:        'bg-green-100 text-green-700',
-  B2BSalesExecutive: 'bg-teal-100 text-teal-700',
-  OperationsHead:    'bg-orange-100 text-orange-700',
-  WarehouseManager:  'bg-yellow-100 text-yellow-700',
-  Finance:           'bg-pink-100 text-pink-700',
+const ROLE_VARIANT: Record<UserRole, BadgeVariant> = {
+  SuperAdmin:        'red',
+  Admin:             'green',
+  StoreIncharge:     'blue',
+  Cashier:           'blue',
+  BDM:               'purple',
+  FieldAgent:        'green',
+  B2BSalesExecutive: 'blue',
+  OperationsHead:    'amber',
+  WarehouseManager:  'gray',
+  Finance:           'gray',
 };
 
 interface FormState {
@@ -65,6 +70,7 @@ const inputCls = (err?: boolean) =>
   }`;
 
 export default function UserManagement() {
+  const toast = useToast();
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -142,6 +148,7 @@ export default function UserManagement() {
         };
       }));
       console.log('// PUT /api/users/' + editingId, form);
+      toast.success('User updated');
     } else {
       const newUser: User = {
         id: `usr-${Date.now()}`,
@@ -158,17 +165,19 @@ export default function UserManagement() {
       };
       setUsers(prev => [newUser, ...prev]);
       console.log('// POST /api/users', newUser);
+      toast.success('User created');
     }
     closeForm();
   }
 
   function toggleActive(userId: string) {
+    const user = users.find(u => u.id === userId);
     setUsers(prev => prev.map(u =>
       u.id === userId ? { ...u, isActive: !u.isActive, updatedAt: new Date().toISOString() } : u,
     ));
-    const user = users.find(u => u.id === userId);
     if (user) {
       console.log(`// PATCH /api/users/${userId} — isActive: ${!user.isActive}`);
+      toast.success(user.isActive ? 'User deactivated' : 'User activated');
     }
   }
 
@@ -180,90 +189,78 @@ export default function UserManagement() {
         <div>
           <p className="text-sm text-gray-500">{users.length} users · {users.filter(u => u.isActive).length} active</p>
         </div>
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors"
-        >
-          <Plus size={15} />
+        <Button variant="primary" iconLeft={Plus} onClick={openAdd}>
           Add User
-        </button>
+        </Button>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50 text-gray-400">
-                <th className="text-left px-4 py-3 font-medium">Name</th>
-                <th className="text-left px-4 py-3 font-medium">Mobile</th>
-                <th className="text-left px-4 py-3 font-medium">Role</th>
-                <th className="text-left px-4 py-3 font-medium">Assigned Stores</th>
-                <th className="text-left px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {users.map(user => (
-                <tr key={user.id} className={`hover:bg-gray-50/60 transition-colors ${!user.isActive ? 'opacity-50' : ''}`}>
-                  <td className="px-4 py-3">
-                    <div>
-                      <p className="font-semibold text-gray-800 text-xs">{user.name}</p>
-                      {user.email && <p className="text-gray-400 text-[10px]">{user.email}</p>}
-                      {user.employeeCode && <p className="text-gray-400 text-[10px]">{user.employeeCode}</p>}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600 font-mono">{user.mobile}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ROLE_BADGE[user.role]}`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 max-w-[200px]">
-                    {user.assignedStoreIds.length === 0
-                      ? <span className="italic text-gray-300">All stores</span>
-                      : user.assignedStoreIds.map(id => (
-                          <span key={id} className="inline-block text-[10px] bg-gray-100 text-gray-600 rounded px-1.5 py-0.5 mr-1 mb-0.5">
-                            {storeNameById.get(id)?.replace('Bharat Agri Store – ', '') ?? id}
-                          </span>
-                        ))
-                    }
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                      user.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {user.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1 justify-end">
-                      <button
-                        onClick={() => openEdit(user)}
-                        className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                        title="Edit"
-                      >
-                        <Pencil size={13} />
-                      </button>
-                      <button
-                        onClick={() => toggleActive(user.id)}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          user.isActive
-                            ? 'text-gray-400 hover:text-red-500 hover:bg-red-50'
-                            : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'
-                        }`}
-                        title={user.isActive ? 'Deactivate' : 'Activate'}
-                      >
-                        {user.isActive ? <UserX size={13} /> : <UserCheck size={13} />}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <TableWrap>
+        <thead>
+          <tr>
+            <Th>Name</Th>
+            <Th>Mobile</Th>
+            <Th>Role</Th>
+            <Th>Assigned Stores</Th>
+            <Th>Status</Th>
+            <Th></Th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map(user => (
+            <Tr key={user.id} className={!user.isActive ? 'opacity-50' : ''}>
+              <Td>
+                <div>
+                  <p className="font-semibold text-gray-800 text-xs">{user.name}</p>
+                  {user.email && <p className="text-gray-400 text-[10px]">{user.email}</p>}
+                  {user.employeeCode && <p className="text-gray-400 text-[10px]">{user.employeeCode}</p>}
+                </div>
+              </Td>
+              <Td mono>{user.mobile}</Td>
+              <Td>
+                <Badge variant={ROLE_VARIANT[user.role]}>{user.role}</Badge>
+              </Td>
+              <Td>
+                {user.assignedStoreIds.length === 0
+                  ? <span className="italic text-gray-300 text-xs">All stores</span>
+                  : user.assignedStoreIds.map(id => (
+                      <span key={id} className="inline-block text-[10px] bg-gray-100 text-gray-600 rounded px-1.5 py-0.5 mr-1 mb-0.5">
+                        {storeNameById.get(id)?.replace('Bharat Agri Store – ', '') ?? id}
+                      </span>
+                    ))
+                }
+              </Td>
+              <Td>
+                <Badge variant={user.isActive ? 'green' : 'gray'}>
+                  {user.isActive ? 'Active' : 'Inactive'}
+                </Badge>
+              </Td>
+              <Td>
+                <div className="flex items-center gap-1 justify-end">
+                  <button
+                    onClick={() => openEdit(user)}
+                    className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                    title="Edit"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    onClick={() => toggleActive(user.id)}
+                    className={`p-1.5 rounded-lg transition-colors ${
+                      user.isActive
+                        ? 'text-gray-400 hover:text-red-500 hover:bg-red-50'
+                        : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'
+                    }`}
+                    title={user.isActive ? 'Deactivate' : 'Activate'}
+                  >
+                    {user.isActive ? <UserX size={13} /> : <UserCheck size={13} />}
+                  </button>
+                </div>
+              </Td>
+            </Tr>
+          ))}
+        </tbody>
+      </TableWrap>
 
       {/* Slide-over */}
       {showForm && (
@@ -399,19 +396,14 @@ export default function UserManagement() {
 
             {/* Footer */}
             <div className="px-6 py-4 border-t border-gray-100 flex items-center gap-3 flex-shrink-0">
-              <button
-                onClick={handleSave}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors"
-              >
-                <Check size={15} />
-                {editingId ? 'Save Changes' : 'Create User'}
-              </button>
-              <button
-                onClick={closeForm}
-                className="px-5 py-2.5 border border-gray-200 text-gray-600 hover:bg-gray-50 text-sm font-medium rounded-xl transition-colors"
-              >
+              <div className="flex-1">
+                <Button variant="primary" iconLeft={Check} onClick={handleSave} className="w-full justify-center">
+                  {editingId ? 'Save Changes' : 'Create User'}
+                </Button>
+              </div>
+              <Button variant="secondary" onClick={closeForm}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         </>

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { CheckCircle2, XCircle, RotateCcw, ChevronDown, ChevronUp, AlertTriangle, Package } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import type { PurchaseRequisition, PRStatus } from './types';
+import Button from '../../components/ui/Button';
+import { Card } from '../../components/ui/Card';
 
 const HIGH_VALUE_THRESHOLD = 50_000;
 
@@ -98,7 +100,7 @@ export default function PRApprovalQueue({ prs, onUpdatePR, onCreatePO }: Props) 
     const mode = actionMode[pr.id] ?? 'idle';
 
     return (
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <Card padding="0">
         {/* Header */}
         <button
           onClick={() => toggleExpand(pr.id)}
@@ -185,12 +187,14 @@ export default function PRApprovalQueue({ prs, onUpdatePR, onCreatePO }: Props) 
             {/* Action buttons */}
             {showActions && mode === 'idle' && (
               <div className="flex items-center gap-2 mt-1">
-                <button
+                <Button
+                  variant="primary"
+                  size="sm"
+                  iconLeft={CheckCircle2}
                   onClick={() => approvePR(pr)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                 >
-                  <CheckCircle2 size={12} /> Approve
-                </button>
+                  Approve
+                </Button>
                 <button
                   onClick={() => setActionMode(prev => ({ ...prev, [pr.id]: 'revise' }))}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-amber-300 text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
@@ -236,28 +240,32 @@ export default function PRApprovalQueue({ prs, onUpdatePR, onCreatePO }: Props) 
                   >
                     {mode === 'reject' ? 'Confirm Rejection' : 'Send Back to SI'}
                   </button>
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => setActionMode(prev => ({ ...prev, [pr.id]: 'idle' }))}
-                    className="px-3 py-1.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
 
             {/* Create PO button for approved PRs */}
             {pr.status === 'Approved, Pending PO' && (
-              <button
-                onClick={() => onCreatePO(pr)}
-                className="mt-2 flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Create Purchase Order →
-              </button>
+              <div className="mt-2">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => onCreatePO(pr)}
+                >
+                  Create Purchase Order →
+                </Button>
+              </div>
             )}
           </div>
         )}
-      </div>
+      </Card>
     );
   }
 

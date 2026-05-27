@@ -2,7 +2,8 @@
 // Tabs: Raise PR | Approval Queue (badge) | Purchase Orders
 
 import { useState } from 'react';
-import { ClipboardList, CheckSquare, FileText } from 'lucide-react';
+import PageHeader from '../../components/ui/PageHeader';
+import Tabs from '../../components/ui/Tabs';
 import PurchaseRequisitionForm from './PurchaseRequisitionForm';
 import PRApprovalQueue from './PRApprovalQueue';
 import PurchaseOrderForm from './PurchaseOrderForm';
@@ -307,76 +308,62 @@ export default function ProcurementPage() {
     setSourcePRId(undefined);
   }
 
-  const TABS = [
-    { key: 'raise'    as ProcTab, label: 'Raise PR',         icon: FileText },
-    { key: 'approval' as ProcTab, label: 'Approval Queue',   icon: CheckSquare, badge: pendingCount },
-    { key: 'po'       as ProcTab, label: 'Purchase Orders',  icon: ClipboardList },
+  const tabs = [
+    { id: 'raise',    label: 'Raise PR' },
+    { id: 'approval', label: 'Approval Queue', badge: pendingCount > 0 ? pendingCount : undefined },
+    { id: 'po',       label: 'Purchase Orders' },
   ];
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="mb-5">
-        <h1 className="text-xl font-bold text-gray-900">Procurement</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
-          Purchase requisitions, approvals, and purchase orders
-        </p>
-      </div>
+    <div className="p-6 max-w-6xl mx-auto space-y-5">
+      <PageHeader
+        title="Procurement"
+        subtitle="Purchase requisitions, approvals, and purchase orders"
+      />
 
-      {/* Tab bar */}
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
-        {TABS.map(({ key, label, icon: Icon, badge }) => (
-          <button
-            key={key}
-            onClick={() => { setTab(key); if (key !== 'po') setShowPOForm(false); }}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              tab === key
-                ? 'border-emerald-600 text-emerald-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <Icon size={14} />
-            {label}
-            {badge != null && badge > 0 && (
-              <span className="ml-1 text-[10px] font-bold bg-amber-500 text-white px-1.5 py-0.5 rounded-full leading-none">
-                {badge}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        tabs={tabs}
+        activeTab={tab}
+        onTabChange={(id) => {
+          setTab(id as ProcTab);
+          if (id !== 'po') setShowPOForm(false);
+        }}
+      />
 
       {/* Tab content */}
-      {tab === 'raise' && (
-        <PurchaseRequisitionForm
-          onSubmit={handleNewPR}
-          prCount={prs.length}
-        />
-      )}
-
-      {tab === 'approval' && (
-        <PRApprovalQueue
-          prs={prs}
-          onUpdatePR={handleUpdatePR}
-          onCreatePO={handleCreatePOFromPR}
-        />
-      )}
-
-      {tab === 'po' && (
-        showPOForm ? (
-          <PurchaseOrderForm
-            approvedPRs={approvedPRs}
-            initialPRId={sourcePRId}
-            poCount={pos.length}
-            onSave={handleSavePO}
-            onCancel={() => { setShowPOForm(false); setSourcePRId(undefined); }}
+      <div>
+        {tab === 'raise' && (
+          <PurchaseRequisitionForm
+            onSubmit={handleNewPR}
+            prCount={prs.length}
           />
-        ) : (
-          <POList
-            pos={pos}
-            onNewPO={() => setShowPOForm(true)}
+        )}
+
+        {tab === 'approval' && (
+          <PRApprovalQueue
+            prs={prs}
+            onUpdatePR={handleUpdatePR}
+            onCreatePO={handleCreatePOFromPR}
           />
-        )
-      )}
+        )}
+
+        {tab === 'po' && (
+          showPOForm ? (
+            <PurchaseOrderForm
+              approvedPRs={approvedPRs}
+              initialPRId={sourcePRId}
+              poCount={pos.length}
+              onSave={handleSavePO}
+              onCancel={() => { setShowPOForm(false); setSourcePRId(undefined); }}
+            />
+          ) : (
+            <POList
+              pos={pos}
+              onNewPO={() => setShowPOForm(true)}
+            />
+          )
+        )}
+      </div>
     </div>
   );
 }

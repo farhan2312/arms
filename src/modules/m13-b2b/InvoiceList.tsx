@@ -4,18 +4,22 @@ import type { B2BInvoice, B2BInvoiceStatus, RetailerAccount } from '../../types/
 import { daysOverdue, ageBucket } from './ReceivablesSummary';
 import type { AgeBucket } from './ReceivablesSummary';
 import { MOCK_USERS } from '../../data/mockUsers';
+import Button from '../../components/ui/Button';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
+import Badge from '../../components/ui/Badge';
+import type { BadgeVariant } from '../../components/ui/Badge';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 type PayMode = 'NEFT' | 'RTGS' | 'Cheque' | 'UPI';
 const PAY_MODES: PayMode[] = ['NEFT', 'RTGS', 'Cheque', 'UPI'];
 
-const STATUS_STYLE: Record<B2BInvoiceStatus, string> = {
-  Unpaid:        'bg-gray-100 text-gray-600',
-  PartiallyPaid: 'bg-amber-100 text-amber-700',
-  Paid:          'bg-emerald-100 text-emerald-700',
-  Overdue:       'bg-red-100 text-red-700',
-  Disputed:      'bg-orange-100 text-orange-700',
+const STATUS_BADGE: Record<B2BInvoiceStatus, BadgeVariant> = {
+  Unpaid:        'gray',
+  PartiallyPaid: 'amber',
+  Paid:          'green',
+  Overdue:       'red',
+  Disputed:      'orange',
 };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -114,109 +118,108 @@ export default function InvoiceList({ invoices, retailers, activeBucket, onPayme
           </button>
         ))}
         {activeBucket !== 'all' && (
-          <span className="ml-1 px-2 py-1 text-[11px] font-medium rounded-full bg-amber-100 text-amber-700">
-            Bucket: {bucketLabel(activeBucket)}
-          </span>
+          <Badge variant="amber">Bucket: {bucketLabel(activeBucket)}</Badge>
         )}
         <span className="ml-auto text-xs text-gray-400">{visibleInvoices.length} invoices</span>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Invoice No.</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Retailer</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Order Ref</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Inv. Date</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Due Date</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Paid</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Outstanding</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {visibleInvoices.map((inv) => {
-                const retailer  = retailerById.get(inv.retailerId);
-                const status    = resolvedStatus(inv);
-                const overdueDays = daysOverdue(inv.dueDate);
-                const isOverdue = overdueDays > 0 && status !== 'Paid';
-                const salesExec = MOCK_USERS.find((u) => u.id === retailer?.salesExecUserId);
+      <div className="overflow-x-auto">
+        <TableWrap>
+          <thead>
+            <tr>
+              <Th>Invoice No.</Th>
+              <Th>Retailer</Th>
+              <Th>Order Ref</Th>
+              <Th>Inv. Date</Th>
+              <Th>Due Date</Th>
+              <Th right>Amount</Th>
+              <Th right>Paid</Th>
+              <Th right>Outstanding</Th>
+              <Th>Status</Th>
+              <Th />
+            </tr>
+          </thead>
+          <tbody>
+            {visibleInvoices.map((inv) => {
+              const retailer    = retailerById.get(inv.retailerId);
+              const status      = resolvedStatus(inv);
+              const overdueDays = daysOverdue(inv.dueDate);
+              const isOverdue   = overdueDays > 0 && status !== 'Paid';
+              const salesExec   = MOCK_USERS.find((u) => u.id === retailer?.salesExecUserId);
 
-                return (
-                  <tr key={inv.id} className={`transition-colors hover:bg-gray-50 ${isOverdue && overdueDays > 60 ? 'bg-red-50/40' : ''}`}>
-                    <td className="px-4 py-3 text-xs font-mono font-semibold text-gray-800">{inv.invoiceNo}</td>
-                    <td className="px-4 py-3">
-                      <p className="text-xs font-medium text-gray-800 leading-snug">{retailer?.firmName ?? inv.retailerId}</p>
-                      {salesExec && <p className="text-[11px] text-gray-400 mt-0.5">{salesExec.name}</p>}
-                    </td>
-                    <td className="px-4 py-3 text-xs font-mono text-gray-500">{inv.orderId.startsWith('b2b-ord-placeholder') ? '—' : inv.orderId.replace('b2b-ord-', 'B2B-').toUpperCase()}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{inv.invoiceDate}</td>
-                    <td className="px-4 py-3 text-xs">
-                      <span className={isOverdue ? 'text-red-600 font-semibold' : 'text-gray-500'}>
-                        {inv.dueDate}
-                      </span>
-                      {isOverdue && (
-                        <p className="text-[11px] text-red-500 font-medium mt-0.5">{overdueDays}d overdue</p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right text-xs text-gray-700">
-                      ₹{inv.totalAmt.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                    </td>
-                    <td className="px-4 py-3 text-right text-xs text-emerald-600">
+              return (
+                <Tr key={inv.id} className={isOverdue && overdueDays > 60 ? 'bg-red-50/40' : ''}>
+                  <Td mono bold>{inv.invoiceNo}</Td>
+                  <Td>
+                    <p className="text-xs font-medium text-gray-800 leading-snug">{retailer?.firmName ?? inv.retailerId}</p>
+                    {salesExec && <p className="text-[11px] text-gray-400 mt-0.5">{salesExec.name}</p>}
+                  </Td>
+                  <Td mono muted>
+                    {inv.orderId.startsWith('b2b-ord-placeholder') ? '—' : inv.orderId.replace('b2b-ord-', 'B2B-').toUpperCase()}
+                  </Td>
+                  <Td muted>{inv.invoiceDate}</Td>
+                  <Td>
+                    <span className={isOverdue ? 'text-red-600 font-semibold text-xs' : 'text-gray-500 text-xs'}>
+                      {inv.dueDate}
+                    </span>
+                    {isOverdue && (
+                      <p className="text-[11px] text-red-500 font-medium mt-0.5">{overdueDays}d overdue</p>
+                    )}
+                  </Td>
+                  <Td right muted>
+                    ₹{inv.totalAmt.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                  </Td>
+                  <Td right>
+                    <span className="text-emerald-600 text-xs">
                       {inv.paidAmt > 0 ? `₹${inv.paidAmt.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-right text-xs font-semibold">
-                      <span className={inv.outstandingAmt > 0 ? (isOverdue ? 'text-red-600' : 'text-gray-900') : 'text-emerald-600'}>
-                        {inv.outstandingAmt > 0
-                          ? `₹${inv.outstandingAmt.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
-                          : 'Nil'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${STATUS_STYLE[status]}`}>
-                        {status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {inv.outstandingAmt > 0 && (
-                        <div className="flex items-center gap-2 justify-end">
+                    </span>
+                  </Td>
+                  <Td right bold>
+                    <span className={`text-xs ${inv.outstandingAmt > 0 ? (isOverdue ? 'text-red-600' : 'text-gray-900') : 'text-emerald-600'}`}>
+                      {inv.outstandingAmt > 0
+                        ? `₹${inv.outstandingAmt.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
+                        : 'Nil'}
+                    </span>
+                  </Td>
+                  <Td>
+                    <Badge variant={STATUS_BADGE[status]}>{status}</Badge>
+                  </Td>
+                  <Td>
+                    {inv.outstandingAmt > 0 && (
+                      <div className="flex items-center gap-2 justify-end">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          iconLeft={CreditCard}
+                          onClick={() => openPayModal(inv)}
+                        >
+                          Record Payment
+                        </Button>
+                        {isOverdue && (
                           <button
-                            onClick={() => openPayModal(inv)}
-                            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors whitespace-nowrap"
+                            onClick={() => sendReminder(inv)}
+                            className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
+                            title="Send WhatsApp / SMS reminder"
                           >
-                            <CreditCard size={11} />
-                            Record Payment
+                            <MessageSquare size={13} />
                           </button>
-                          {isOverdue && (
-                            <button
-                              onClick={() => sendReminder(inv)}
-                              className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
-                              title="Send WhatsApp / SMS reminder"
-                            >
-                              <MessageSquare size={13} />
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-              {visibleInvoices.length === 0 && (
-                <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-sm text-gray-400">
-                    No invoices match the current filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                        )}
+                      </div>
+                    )}
+                  </Td>
+                </Tr>
+              );
+            })}
+            {visibleInvoices.length === 0 && (
+              <tr>
+                <td colSpan={10} className="px-4 py-12 text-center text-sm text-gray-400">
+                  No invoices match the current filters.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </TableWrap>
       </div>
 
       {/* ── Payment Modal ──────────────────────────────────────────────────── */}
@@ -229,7 +232,10 @@ export default function InvoiceList({ invoices, retailers, activeBucket, onPayme
                 <h3 className="text-base font-semibold text-gray-900">Record Payment</h3>
                 <p className="text-xs text-gray-500 mt-0.5 font-mono">{payingInvoice.invoiceNo}</p>
               </div>
-              <button onClick={() => setPayingId(null)} className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
+              <button
+                onClick={() => setPayingId(null)}
+                className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+              >
                 <X size={15} />
               </button>
             </div>
@@ -305,16 +311,16 @@ export default function InvoiceList({ invoices, retailers, activeBucket, onPayme
             </div>
 
             <div className="flex items-center justify-end gap-3 mt-5">
-              <button onClick={() => setPayingId(null)} className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+              <Button variant="secondary" onClick={() => setPayingId(null)}>
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="primary"
                 onClick={confirmPayment}
                 disabled={!payForm.amount || !payForm.reference}
-                className="px-5 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Confirm Payment
-              </button>
+              </Button>
             </div>
           </div>
         </>

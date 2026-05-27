@@ -1,17 +1,36 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import { ToastProvider } from '../context/ToastContext';
+import Toaster from '../components/ui/Toaster';
 
 export default function AppLayout() {
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Topbar />
-        <main className="flex-1 overflow-y-auto">
-          <Outlet />
-        </main>
+    <ToastProvider>
+      <div
+        style={{
+          display: 'flex',
+          height: '100vh',
+          overflow: 'hidden',
+          backgroundColor: 'var(--bg-page)',
+        }}
+      >
+        <Sidebar />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <Topbar />
+          <main
+            className="overflow-y-auto"
+            style={{
+              flex: 1,
+              padding: '28px 32px',
+              backgroundColor: 'var(--bg-page)',
+            }}
+          >
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
+      <Toaster />
+    </ToastProvider>
   );
 }

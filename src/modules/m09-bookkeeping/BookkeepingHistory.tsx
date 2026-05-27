@@ -2,12 +2,17 @@
 // BDM / OpsHead / Finance see all stores; StoreIncharge sees only their store
 
 import { useMemo } from 'react';
-import { Download, AlertTriangle, CheckCircle2, Flag } from 'lucide-react';
+import { Download, AlertTriangle, CheckCircle2, Flag, BookOpen } from 'lucide-react';
 import { mockSaleTransactions } from '../../data/mockSaleTransactions';
 import { mockB2BOrders } from '../../data/mockB2BOrders';
 import { mockStores } from '../../data/mockStores';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../hooks/useToast';
 import type { BookkeepingEntry } from './BookkeepingPage';
+import Button from '../../components/ui/Button';
+import Badge from '../../components/ui/Badge';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
+import EmptyState from '../../components/ui/EmptyState';
 
 const TODAY = '2026-05-27';
 
@@ -83,6 +88,7 @@ interface Props {
 
 export default function BookkeepingHistory({ entries }: Props) {
   const { currentUser } = useAuth();
+  const toast = useToast();
   const isWide = WIDE_ROLES.has(currentUser.role);
 
   const storeNameMap = useMemo(
@@ -138,8 +144,8 @@ export default function BookkeepingHistory({ entries }: Props) {
     );
   }, [entries, visibleStoreIds, storeNameMap]);
 
-  const missingCount  = rows.filter(r => r.status === 'Missing').length;
-  const flaggedCount  = rows.filter(r => r.status === 'Flagged').length;
+  const missingCount   = rows.filter(r => r.status === 'Missing').length;
+  const flaggedCount   = rows.filter(r => r.status === 'Flagged').length;
   const submittedCount = rows.filter(r => r.status === 'Submitted').length;
 
   function handleExport() {
@@ -149,6 +155,7 @@ export default function BookkeepingHistory({ entries }: Props) {
       dateFrom,
       dateTo: TODAY,
     });
+    toast.success('Export started', 'Your PDF will download shortly.');
   }
 
   return (
@@ -168,12 +175,9 @@ export default function BookkeepingHistory({ entries }: Props) {
             )}
           </p>
         </div>
-        <button
-          onClick={handleExport}
-          className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-sm text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <Download size={14} /> Export PDF
-        </button>
+        <Button variant="secondary" iconLeft={Download} onClick={handleExport}>
+          Export PDF
+        </Button>
       </div>
 
       {/* ── Legend ──────────────────────────────────────────────────────────── */}
@@ -189,93 +193,87 @@ export default function BookkeepingHistory({ entries }: Props) {
       </div>
 
       {/* ── Table ───────────────────────────────────────────────────────────── */}
-      <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
-        <table className="w-full text-sm min-w-[860px]">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              {[
-                'Date', 'Store', 'B2C Sales', 'B2B Dispatches',
-                'Opening Cash', 'Closing Cash', 'Cash Discrepancy', 'Status',
-              ].map(h => (
-                <th
-                  key={h}
-                  className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {rows.map(row => {
-              const isMissing = row.status === 'Missing';
-              const isFlagged = row.status === 'Flagged';
-              return (
-                <tr
-                  key={row.key}
-                  className={
-                    isMissing
-                      ? 'bg-amber-50/70 hover:bg-amber-50'
-                      : isFlagged
-                      ? 'bg-red-50/40 hover:bg-red-50'
-                      : 'bg-white hover:bg-gray-50'
-                  }
-                >
-                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap text-xs">{fmtDate(row.date)}</td>
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap text-xs">{shortStore(row.storeName)}</td>
-                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap font-mono text-xs">
-                    {fmtMoney(row.b2cSales)}
-                  </td>
-                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap font-mono text-xs">
-                    {fmtMoney(row.b2bDispatches)}
-                  </td>
-                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap font-mono text-xs">
-                    {row.openingCash != null ? `₹${row.openingCash.toLocaleString('en-IN')}` : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap font-mono text-xs">
-                    {row.closingCash != null ? `₹${row.closingCash.toLocaleString('en-IN')}` : '—'}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    {row.discrepancyAmt != null ? (
-                      <span className="font-mono text-xs font-medium text-red-600">
-                        ₹{row.discrepancyAmt.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                      </span>
-                    ) : row.status !== 'Missing' ? (
-                      <CheckCircle2 size={13} className="text-emerald-500" />
-                    ) : (
-                      <span className="text-gray-300 text-xs">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    {isMissing && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                        <AlertTriangle size={9} /> Missing
-                      </span>
-                    )}
-                    {isFlagged && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
-                        <Flag size={9} /> Flagged
-                      </span>
-                    )}
-                    {row.status === 'Submitted' && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                        <CheckCircle2 size={9} /> Submitted
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-            {rows.length === 0 && (
+      {rows.length === 0 ? (
+        <EmptyState icon={BookOpen} title="No entries to display." />
+      ) : (
+        <div className="overflow-x-auto">
+          <TableWrap>
+            <thead>
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-sm text-gray-400">
-                  No entries to display.
-                </td>
+                {[
+                  'Date', 'Store', 'B2C Sales', 'B2B Dispatches',
+                  'Opening Cash', 'Closing Cash', 'Cash Discrepancy', 'Status',
+                ].map(h => (
+                  <Th key={h}>{h}</Th>
+                ))}
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {rows.map(row => {
+                const isMissing = row.status === 'Missing';
+                const isFlagged = row.status === 'Flagged';
+                return (
+                  <Tr
+                    key={row.key}
+                    className={
+                      isMissing
+                        ? 'bg-amber-50/70 hover:bg-amber-50'
+                        : isFlagged
+                        ? 'bg-red-50/40 hover:bg-red-50'
+                        : ''
+                    }
+                  >
+                    <Td>{fmtDate(row.date)}</Td>
+                    <Td muted>{shortStore(row.storeName)}</Td>
+                    <Td mono>{fmtMoney(row.b2cSales)}</Td>
+                    <Td mono>{fmtMoney(row.b2bDispatches)}</Td>
+                    <Td mono>
+                      {row.openingCash != null ? `₹${row.openingCash.toLocaleString('en-IN')}` : '—'}
+                    </Td>
+                    <Td mono>
+                      {row.closingCash != null ? `₹${row.closingCash.toLocaleString('en-IN')}` : '—'}
+                    </Td>
+                    <Td>
+                      {row.discrepancyAmt != null ? (
+                        <span className="font-mono text-xs font-medium text-red-600">
+                          ₹{row.discrepancyAmt.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                        </span>
+                      ) : row.status !== 'Missing' ? (
+                        <CheckCircle2 size={13} className="text-emerald-500" />
+                      ) : (
+                        <span className="text-gray-300 text-xs">—</span>
+                      )}
+                    </Td>
+                    <Td>
+                      {isMissing && (
+                        <Badge variant="amber">
+                          <span className="inline-flex items-center gap-1">
+                            <AlertTriangle size={9} /> Missing
+                          </span>
+                        </Badge>
+                      )}
+                      {isFlagged && (
+                        <Badge variant="red">
+                          <span className="inline-flex items-center gap-1">
+                            <Flag size={9} /> Flagged
+                          </span>
+                        </Badge>
+                      )}
+                      {row.status === 'Submitted' && (
+                        <Badge variant="green">
+                          <span className="inline-flex items-center gap-1">
+                            <CheckCircle2 size={9} /> Submitted
+                          </span>
+                        </Badge>
+                      )}
+                    </Td>
+                  </Tr>
+                );
+              })}
+            </tbody>
+          </TableWrap>
+        </div>
+      )}
     </div>
   );
 }

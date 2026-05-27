@@ -6,6 +6,8 @@ import { mockFarmers } from '../../data/mockFarmers';
 import { mockLoyaltyWallets } from '../../data/mockLoyaltyWallets';
 import type { CouponCampaign, IssuedCoupon } from '../../data/mockCouponCampaigns';
 import type { LoyaltyTier } from '../../types/loyalty';
+import Button from '../../components/ui/Button';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
 
 const TODAY = '2026-05-27';
 
@@ -262,13 +264,15 @@ export default function CouponIssuance({ campaigns, issuedCoupons, onIssueCoupon
               </div>
             )}
 
-            <button
+            <Button
+              variant="primary"
+              iconLeft={Send}
+              disabled={!selectedCampaignId || !selectedFarmerId || !!alreadyIssued}
               onClick={handleIndividualIssue}
-              disabled={!selectedCampaignId || !selectedFarmerId || alreadyIssued}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full justify-center"
             >
-              <Send size={14} /> Issue Coupon
-            </button>
+              Issue Coupon
+            </Button>
           </div>
         </div>
       )}
@@ -311,13 +315,14 @@ export default function CouponIssuance({ campaigns, issuedCoupons, onIssueCoupon
               />
             </div>
 
-            <button
-              onClick={handleBulkIssue}
+            <Button
+              variant="primary"
+              iconLeft={Upload}
               disabled={!bulkCampaignId || !csvText.trim()}
-              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              onClick={handleBulkIssue}
             >
-              <Upload size={14} /> Process & Issue
-            </button>
+              Process &amp; Issue
+            </Button>
 
             {/* Bulk results */}
             {bulkResults.length > 0 && (
@@ -333,28 +338,28 @@ export default function CouponIssuance({ campaigns, issuedCoupons, onIssueCoupon
                     ✕ {bulkResults.filter(r => r.status === 'not_found').length} not found
                   </span>
                 </div>
-                <table className="w-full text-xs">
+                <TableWrap>
                   <thead>
-                    <tr className="border-b border-gray-200 text-[10px] text-gray-400 uppercase tracking-wide bg-white">
-                      <th className="px-4 py-2 text-left font-semibold">Mobile</th>
-                      <th className="px-4 py-2 text-left font-semibold">Result</th>
-                      <th className="px-4 py-2 text-left font-semibold">Coupon Code</th>
+                    <tr>
+                      <Th>Mobile</Th>
+                      <Th>Result</Th>
+                      <Th>Coupon Code</Th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody>
                     {bulkResults.map((r, i) => (
-                      <tr key={i} className="bg-white">
-                        <td className="px-4 py-2 font-mono text-gray-700">{r.mobile}</td>
-                        <td className="px-4 py-2">
+                      <Tr key={i}>
+                        <Td mono>{r.mobile}</Td>
+                        <Td>
                           {r.status === 'ok'             && <span className="text-emerald-600 font-semibold">Issued</span>}
                           {r.status === 'already_issued' && <span className="text-amber-600">Already issued</span>}
                           {r.status === 'not_found'      && <span className="text-red-500">Farmer not found</span>}
-                        </td>
-                        <td className="px-4 py-2 font-mono text-gray-600">{r.code ?? '—'}</td>
-                      </tr>
+                        </Td>
+                        <Td mono muted>{r.code ?? '—'}</Td>
+                      </Tr>
                     ))}
                   </tbody>
-                </table>
+                </TableWrap>
               </div>
             )}
           </div>

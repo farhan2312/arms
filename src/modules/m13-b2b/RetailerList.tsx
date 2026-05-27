@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react';
-import { Search, Plus, Pencil } from 'lucide-react';
+import { Plus, Pencil } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
+import { SearchInput, Select } from '../../components/ui/Input';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
 import type { RetailerAccount, RetailerTier } from '../../types/b2b';
 import { MOCK_USERS } from '../../data/mockUsers';
 
@@ -77,22 +80,16 @@ export default function RetailerList({ retailers, onSelect, onAdd, onEdit }: Pro
     <div>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3 mb-5">
-        <div className="relative flex-1 min-w-60">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
+        <div className="flex-1 min-w-60">
+          <SearchInput
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={setSearch}
             placeholder="Search firm name, owner, GST, mobile…"
-            className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
           />
         </div>
-        <button
-          onClick={onAdd}
-          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 transition-colors flex-shrink-0"
-        >
-          <Plus size={14} />
+        <Button variant="primary" iconLeft={Plus} size="sm" onClick={onAdd}>
           Add Retailer
-        </button>
+        </Button>
       </div>
 
       {/* Filters */}
@@ -115,23 +112,19 @@ export default function RetailerList({ retailers, onSelect, onAdd, onEdit }: Pro
         <div className="w-px h-5 bg-gray-200 mx-1" />
 
         {/* District */}
-        <select
-          value={distFilter}
-          onChange={(e) => setDistFilter(e.target.value)}
-          className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        >
-          {districts.map((d) => <option key={d} value={d}>{d === 'All' ? 'All Districts' : d}</option>)}
-        </select>
+        <div style={{ width: '160px' }}>
+          <Select value={distFilter} onChange={setDistFilter}>
+            {districts.map((d) => <option key={d} value={d}>{d === 'All' ? 'All Districts' : d}</option>)}
+          </Select>
+        </div>
 
         {/* Sales Exec */}
-        <select
-          value={execFilter}
-          onChange={(e) => setExecFilter(e.target.value)}
-          className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        >
-          <option value="All">All Sales Execs</option>
-          {SALES_EXECS.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-        </select>
+        <div style={{ width: '180px' }}>
+          <Select value={execFilter} onChange={setExecFilter}>
+            <option value="All">All Sales Execs</option>
+            {SALES_EXECS.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </Select>
+        </div>
 
         {/* Overdue toggle */}
         <button
@@ -149,89 +142,87 @@ export default function RetailerList({ retailers, onSelect, onAdd, onEdit }: Pro
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Business</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Owner</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Mobile</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">District</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tier</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Credit Limit</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Outstanding</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Available</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Terms</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sales Exec</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filtered.map((r) => {
-                const available = r.creditLimitAmt - r.outstandingAmt;
-                const availPct  = r.creditLimitAmt > 0 ? (available / r.creditLimitAmt) * 100 : 100;
-                const exec      = r.salesExecUserId ? MOCK_USERS.find((u) => u.id === r.salesExecUserId) : undefined;
-                const isOverdue = OVERDUE_IDS.has(r.id);
+      <div className="overflow-x-auto">
+        <TableWrap>
+          <thead>
+            <tr>
+              <Th>Business</Th>
+              <Th>Owner</Th>
+              <Th>Mobile</Th>
+              <Th>District</Th>
+              <Th>Tier</Th>
+              <Th right>Credit Limit</Th>
+              <Th right>Outstanding</Th>
+              <Th right>Available</Th>
+              <Th>Terms</Th>
+              <Th>Sales Exec</Th>
+              <Th>Status</Th>
+              <Th />
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((r) => {
+              const available = r.creditLimitAmt - r.outstandingAmt;
+              const availPct  = r.creditLimitAmt > 0 ? (available / r.creditLimitAmt) * 100 : 100;
+              const exec      = r.salesExecUserId ? MOCK_USERS.find((u) => u.id === r.salesExecUserId) : undefined;
+              const isOverdue = OVERDUE_IDS.has(r.id);
 
-                return (
-                  <tr
-                    key={r.id}
-                    onClick={() => onSelect(r.id)}
-                    className={`cursor-pointer transition-colors hover:bg-gray-50 ${isOverdue ? 'bg-red-50/40' : ''}`}
-                  >
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900 text-xs leading-snug">{r.firmName}</p>
-                      <p className="text-[11px] text-gray-400 font-mono mt-0.5">{r.gstIn}</p>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-600">{r.ownerName}</td>
-                    <td className="px-4 py-3 text-xs text-gray-600 font-mono">{r.mobile}</td>
-                    <td className="px-4 py-3 text-xs text-gray-600">{r.address.district}</td>
-                    <td className="px-4 py-3">
-                      <Badge label={r.tier} variant={TIER_BADGE[r.tier]} />
-                    </td>
-                    <td className="px-4 py-3 text-right text-xs text-gray-600">{fmt(r.creditLimitAmt)}</td>
-                    <td className="px-4 py-3 text-right text-xs">
-                      <span className={r.outstandingAmt > 0 && isOverdue ? 'text-red-600 font-semibold' : 'text-gray-700'}>
-                        {fmt(r.outstandingAmt)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right text-xs">
-                      <span className={availableCreditColor(availPct)}>{fmt(Math.max(0, available))}</span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-600">{creditTermLabel(r.creditDays)}</td>
-                    <td className="px-4 py-3 text-xs text-gray-600">{exec?.name ?? '—'}</td>
-                    <td className="px-4 py-3">
-                      {isOverdue
-                        ? <Badge label="Overdue" variant="red" />
-                        : r.isActive
-                          ? <Badge label="Active" variant="green" />
-                          : <Badge label="Inactive" variant="gray" />
-                      }
-                    </td>
-                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => onEdit(r)}
-                        className="text-gray-300 hover:text-emerald-600 transition-colors"
-                        title="Edit retailer"
-                      >
-                        <Pencil size={13} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={12} className="px-4 py-12 text-center text-sm text-gray-400">
-                    No retailer accounts match the current filters.
+              return (
+                <Tr
+                  key={r.id}
+                  className={isOverdue ? 'bg-red-50/40' : ''}
+                  onClick={() => onSelect(r.id)}
+                >
+                  <Td>
+                    <p className="font-medium text-xs leading-snug" style={{ color: 'var(--text-primary)' }}>{r.firmName}</p>
+                    <p className="text-[11px] font-mono mt-0.5" style={{ color: 'var(--text-muted)' }}>{r.gstIn}</p>
+                  </Td>
+                  <Td muted>{r.ownerName}</Td>
+                  <Td mono muted>{r.mobile}</Td>
+                  <Td muted>{r.address.district}</Td>
+                  <Td>
+                    <Badge label={r.tier} variant={TIER_BADGE[r.tier]} />
+                  </Td>
+                  <Td right muted>{fmt(r.creditLimitAmt)}</Td>
+                  <Td right>
+                    <span className={r.outstandingAmt > 0 && isOverdue ? 'text-red-600 font-semibold' : ''} style={{ color: r.outstandingAmt > 0 && isOverdue ? undefined : 'var(--text-primary)' }}>
+                      {fmt(r.outstandingAmt)}
+                    </span>
+                  </Td>
+                  <Td right>
+                    <span className={availableCreditColor(availPct)}>{fmt(Math.max(0, available))}</span>
+                  </Td>
+                  <Td muted>{creditTermLabel(r.creditDays)}</Td>
+                  <Td muted>{exec?.name ?? '—'}</Td>
+                  <Td>
+                    {isOverdue
+                      ? <Badge label="Overdue" variant="red" />
+                      : r.isActive
+                        ? <Badge label="Active" variant="green" />
+                        : <Badge label="Inactive" variant="gray" />
+                    }
+                  </Td>
+                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => onEdit(r)}
+                      className="text-gray-300 hover:text-emerald-600 transition-colors"
+                      title="Edit retailer"
+                    >
+                      <Pencil size={13} />
+                    </button>
                   </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                </Tr>
+              );
+            })}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={12} className="px-4 py-12 text-center text-sm text-gray-400">
+                  No retailer accounts match the current filters.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </TableWrap>
       </div>
     </div>
   );

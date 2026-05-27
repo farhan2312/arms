@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { CheckCircle2 } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
+import { useToast } from '../../hooks/useToast';
 import { mockStores } from '../../data/mockStores';
 import type { Store } from '../../types/entities';
 import StoreList from './StoreList';
@@ -10,19 +10,15 @@ import StoreForm from './StoreForm';
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function Stores() {
+  const toast = useToast();
+
   const [stores,       setStores]       = useState<Store[]>(mockStores);
   const [selectedId,   setSelectedId]   = useState<string | null>(null);
   const [showForm,     setShowForm]     = useState(false);
   const [editingStore, setEditingStore] = useState<Store | undefined>();
-  const [toast,        setToast]        = useState<string | null>(null);
 
   const selectedStore = selectedId ? stores.find((s) => s.id === selectedId) : null;
   const existingCodes = stores.map((s) => s.code);
-
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3500);
-  }
 
   function openCreate() {
     setEditingStore(undefined);
@@ -38,10 +34,10 @@ export default function Stores() {
     if (editingStore) {
       setStores((prev) => prev.map((s) => s.id === saved.id ? saved : s));
       // If the edited store is the one currently being viewed, keep it selected
-      showToast(`Store ${saved.code} updated successfully`);
+      toast.success(`Store ${saved.code} updated successfully`);
     } else {
       setStores((prev) => [...prev, saved]);
-      showToast(`Store ${saved.code} added successfully`);
+      toast.success(`Store ${saved.code} added successfully`);
     }
     console.log(`// ${editingStore ? 'PATCH' : 'POST'} /api/stores`, saved);
     setShowForm(false);
@@ -85,14 +81,6 @@ export default function Stores() {
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditingStore(undefined); }}
         />
-      )}
-
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 flex items-center gap-2.5 bg-gray-900 text-white text-sm font-medium px-5 py-3 rounded-xl shadow-2xl z-[100] max-w-sm">
-          <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0" />
-          {toast}
-        </div>
       )}
     </div>
   );

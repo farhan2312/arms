@@ -1,7 +1,11 @@
 import { useState } from 'react';
-import { Search, Plus, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, ChevronDown, ChevronRight, ShoppingBag, Clock, Truck, IndianRupee } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
 import Badge, { statusVariant } from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
+import { SearchInput } from '../../components/ui/Input';
+import KpiCard from '../../components/ui/KpiCard';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
 import { mockOrders } from '../../data/mockOrders';
 
 const b2bOrders = mockOrders.filter((o) => o.orderType === 'B2B');
@@ -35,37 +39,51 @@ export default function B2BOrdersPage() {
         title="B2B Orders"
         subtitle="Bulk agri-input orders from dealers and institutional buyers"
         actions={
-          <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
-            <Plus size={15} />
+          <Button variant="primary" iconLeft={Plus}>
             Create Order
-          </button>
+          </Button>
         }
       />
 
       {/* Summary */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        {[
-          { label: 'Total Orders', value: b2bOrders.length },
-          { label: 'Pending', value: b2bOrders.filter((o) => o.status === 'Pending').length },
-          { label: 'Dispatched', value: b2bOrders.filter((o) => o.status === 'Dispatched').length },
-          { label: 'Total Value', value: `₹${b2bOrders.reduce((s, o) => s + o.total, 0).toLocaleString('en-IN')}` },
-        ].map((stat) => (
-          <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-4">
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">{stat.label}</p>
-            <p className="text-xl font-bold text-gray-900 mt-1">{stat.value}</p>
-          </div>
-        ))}
+        <KpiCard
+          label="Total Orders"
+          value={b2bOrders.length}
+          icon={ShoppingBag}
+          iconBg="#dcfce7"
+          iconColor="#16a34a"
+        />
+        <KpiCard
+          label="Pending"
+          value={b2bOrders.filter((o) => o.status === 'Pending').length}
+          icon={Clock}
+          iconBg="#fef9c3"
+          iconColor="#ca8a04"
+        />
+        <KpiCard
+          label="Dispatched"
+          value={b2bOrders.filter((o) => o.status === 'Dispatched').length}
+          icon={Truck}
+          iconBg="#dbeafe"
+          iconColor="#2563eb"
+        />
+        <KpiCard
+          label="Total Value"
+          value={`₹${b2bOrders.reduce((s, o) => s + o.total, 0).toLocaleString('en-IN')}`}
+          icon={IndianRupee}
+          iconBg="#dcfce7"
+          iconColor="#16a34a"
+        />
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-5">
-        <div className="relative flex-1 min-w-60">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
+        <div style={{ flex: 1, minWidth: '240px' }}>
+          <SearchInput
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={setSearch}
             placeholder="Search by order no. or buyer name..."
-            className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
           />
         </div>
         {['All', 'Pending', 'Confirmed', 'Dispatched', 'Delivered', 'Cancelled'].map((s) => (
@@ -86,7 +104,15 @@ export default function B2BOrdersPage() {
       {/* Orders */}
       <div className="space-y-3">
         {filtered.map((order) => (
-          <div key={order.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div
+            key={order.id}
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)',
+              overflow: 'hidden',
+            }}
+          >
             <button
               onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}
               className="w-full px-5 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors text-left"
@@ -121,38 +147,38 @@ export default function B2BOrdersPage() {
             </button>
 
             {expandedId === order.id && (
-              <div className="border-t border-gray-100 px-5 pb-4">
-                <table className="w-full text-xs mt-3">
+              <div className="border-t border-gray-100 px-5 pb-4 pt-3">
+                <TableWrap>
                   <thead>
-                    <tr className="border-b border-gray-100">
-                      <th className="text-left py-2 text-gray-500 font-semibold">Product</th>
-                      <th className="text-right py-2 text-gray-500 font-semibold">Qty</th>
-                      <th className="text-right py-2 text-gray-500 font-semibold">Unit Price</th>
-                      <th className="text-right py-2 text-gray-500 font-semibold">Total</th>
+                    <tr>
+                      <Th>Product</Th>
+                      <Th right>Qty</Th>
+                      <Th right>Unit Price</Th>
+                      <Th right>Total</Th>
                     </tr>
                   </thead>
                   <tbody>
                     {order.items.map((item) => (
-                      <tr key={item.productId} className="border-b border-gray-50">
-                        <td className="py-2">
-                          <p className="font-medium text-gray-800">{item.productName}</p>
-                          <p className="text-gray-400 font-mono">{item.sku}</p>
-                        </td>
-                        <td className="py-2 text-right text-gray-700">{item.quantity} {item.unit}s</td>
-                        <td className="py-2 text-right text-gray-700">₹{item.unitPrice.toLocaleString('en-IN')}</td>
-                        <td className="py-2 text-right font-semibold text-gray-800">₹{item.total.toLocaleString('en-IN')}</td>
-                      </tr>
+                      <Tr key={item.productId}>
+                        <Td>
+                          <p style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{item.productName}</p>
+                          <p style={{ color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: '11px' }}>{item.sku}</p>
+                        </Td>
+                        <Td right>{item.quantity} {item.unit}s</Td>
+                        <Td right>₹{item.unitPrice.toLocaleString('en-IN')}</Td>
+                        <Td right bold>₹{item.total.toLocaleString('en-IN')}</Td>
+                      </Tr>
                     ))}
                     <tr>
-                      <td colSpan={3} className="pt-3 text-right text-gray-500 font-medium">Discount</td>
-                      <td className="pt-3 text-right text-green-600 font-semibold">- ₹{order.discount.toLocaleString('en-IN')}</td>
+                      <td colSpan={3} style={{ padding: '12px 16px', textAlign: 'right', fontSize: '13px', color: 'var(--text-muted)', borderBottom: '1px solid #f8fafc' }}>Discount</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: '13px', color: 'var(--green-500)', fontWeight: 500, borderBottom: '1px solid #f8fafc' }}>- ₹{order.discount.toLocaleString('en-IN')}</td>
                     </tr>
                     <tr>
-                      <td colSpan={3} className="py-1 text-right font-bold text-gray-800">Total Payable</td>
-                      <td className="py-1 text-right font-bold text-gray-900">₹{order.total.toLocaleString('en-IN')}</td>
+                      <td colSpan={3} style={{ padding: '12px 16px', textAlign: 'right', fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>Total Payable</td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>₹{order.total.toLocaleString('en-IN')}</td>
                     </tr>
                   </tbody>
-                </table>
+                </TableWrap>
               </div>
             )}
           </div>

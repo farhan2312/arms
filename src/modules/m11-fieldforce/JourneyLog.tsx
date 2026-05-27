@@ -3,9 +3,12 @@
 
 import { useState, useMemo } from 'react';
 import {
-  Plus, Car, Bike, Train, Bus, CheckCircle2,
+  Plus, Car, Bike, Train, Bus,
   MapPin, Coins,
 } from 'lucide-react';
+import Button from '../../components/ui/Button';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
+import { useToast } from '../../hooks/useToast';
 import { mockStores } from '../../data/mockStores';
 import { mockRetailers } from '../../data/mockRetailers';
 import { useAuth } from '../../context/AuthContext';
@@ -122,6 +125,7 @@ function fmt(n: number) {
 export default function JourneyLog() {
   const { currentUser } = useAuth();
   const role = currentUser.role;
+  const toast = useToast();
 
   // Form state
   const [date,       setDate]       = useState('2026-05-26');
@@ -134,7 +138,6 @@ export default function JourneyLog() {
   const [retailIds,  setRetailIds]  = useState<Set<string>>(new Set());
   const [nights,     setNights]     = useState(0);
   const [errors,     setErrors]     = useState<string[]>([]);
-  const [toast,      setToast]      = useState<string | null>(null);
 
   const [journeys,   setJourneys]   = useState<Journey[]>(SEED_JOURNEYS);
 
@@ -185,8 +188,7 @@ export default function JourneyLog() {
     console.log('// POST /api/field-force/journeys', journey);
 
     setJourneys(prev => [journey, ...prev]);
-    setToast(`Journey logged. TA: ${fmt(taAmt)} · DA: ${fmt(daAmt)} · Total: ${fmt(total)}`);
-    setTimeout(() => setToast(null), 5000);
+    toast.success(`Journey logged. TA: ${fmt(taAmt)} · DA: ${fmt(daAmt)} · Total: ${fmt(total)}`);
 
     // Reset
     setFrom(''); setTo(''); setKm(''); setNights(0);
@@ -214,14 +216,6 @@ export default function JourneyLog() {
           Role: <strong className="text-gray-700">{role}</strong>
         </span>
       </div>
-
-      {/* ── Toast ────────────────────────────────────────────────────────── */}
-      {toast && (
-        <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-300 rounded-xl px-4 py-3">
-          <CheckCircle2 size={15} className="text-emerald-600 flex-shrink-0" />
-          <p className="text-sm text-emerald-800 font-medium">{toast}</p>
-        </div>
-      )}
 
       {/* ── Errors ───────────────────────────────────────────────────────── */}
       {errors.length > 0 && (
@@ -362,10 +356,9 @@ export default function JourneyLog() {
               = {fmt(total)}
             </div>
           </div>
-          <button onClick={handleSubmit}
-            className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm flex-shrink-0">
+          <Button variant="primary" onClick={handleSubmit}>
             Submit Journey
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -380,51 +373,49 @@ export default function JourneyLog() {
           <div className="py-10 text-center text-xs text-gray-400">No journeys logged yet.</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <TableWrap>
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50 text-[10px] text-gray-400 uppercase tracking-widest">
-                  <th className="text-left px-4 py-2.5 font-medium">Date</th>
-                  <th className="text-left px-4 py-2.5 font-medium">Route</th>
-                  <th className="text-left px-4 py-2.5 font-medium">Mode</th>
-                  <th className="text-left px-4 py-2.5 font-medium">Purpose</th>
-                  <th className="text-right px-4 py-2.5 font-medium">KM</th>
-                  <th className="text-right px-4 py-2.5 font-medium">TA</th>
-                  <th className="text-right px-4 py-2.5 font-medium">DA</th>
-                  <th className="text-right px-4 py-2.5 font-medium">Total</th>
+                <tr>
+                  <Th>Date</Th>
+                  <Th>Route</Th>
+                  <Th>Mode</Th>
+                  <Th>Purpose</Th>
+                  <Th right>KM</Th>
+                  <Th right>TA</Th>
+                  <Th right>DA</Th>
+                  <Th right>Total</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody>
                 {myJourneys.map(j => {
                   const Icon = MODE_ICON[j.mode];
                   const visitCount = j.visitedStoreIds.length + j.visitedRetailerIds.length;
                   return (
-                    <tr key={j.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-2.5 text-gray-600 tabular-nums">{j.date}</td>
-                      <td className="px-4 py-2.5">
+                    <Tr key={j.id}>
+                      <Td mono muted>{j.date}</Td>
+                      <Td>
                         <p className="font-medium text-gray-800 flex items-center gap-1">
                           <MapPin size={9} className="text-gray-400" />
                           {j.from} → {j.to}
                         </p>
                         {visitCount > 0 && (
-                          <p className="text-gray-400 mt-0.5">
+                          <p className="text-gray-400 mt-0.5 text-[11px]">
                             {visitCount} stop{visitCount !== 1 ? 's' : ''}
                           </p>
                         )}
-                      </td>
-                      <td className="px-4 py-2.5">
+                      </Td>
+                      <Td>
                         <span className="flex items-center gap-1 text-gray-600">
                           <Icon size={11} className="text-gray-400" />
                           {j.mode}
                         </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-gray-600">{j.purpose}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums text-gray-700 font-medium">{j.claimedDistanceKm}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums text-gray-700">{fmt(j.taAmount)}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums text-gray-500">
-                        {j.daAmount > 0 ? fmt(j.daAmount) : '—'}
-                      </td>
-                      <td className="px-4 py-2.5 text-right tabular-nums font-bold text-gray-900">{fmt(j.totalClaim)}</td>
-                    </tr>
+                      </Td>
+                      <Td muted>{j.purpose}</Td>
+                      <Td right mono bold>{j.claimedDistanceKm}</Td>
+                      <Td right mono>{fmt(j.taAmount)}</Td>
+                      <Td right mono muted>{j.daAmount > 0 ? fmt(j.daAmount) : '—'}</Td>
+                      <Td right mono bold>{fmt(j.totalClaim)}</Td>
+                    </Tr>
                   );
                 })}
               </tbody>
@@ -445,7 +436,7 @@ export default function JourneyLog() {
                   </td>
                 </tr>
               </tfoot>
-            </table>
+            </TableWrap>
           </div>
         )}
       </div>

@@ -4,10 +4,13 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Plus, Search, ChevronDown, ChevronUp, Filter,
+  Plus, ChevronDown, ChevronUp, Filter,
   Package, Truck, CheckCircle2, Clock, FileText,
   Building2, User, Calendar, ExternalLink,
 } from 'lucide-react';
+import Button from '../../components/ui/Button';
+import { SearchInput } from '../../components/ui/Input';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
 import { mockB2BOrders } from '../../data/mockB2BOrders';
 import { retailerById } from '../../data/mockRetailers';
 import { userById } from '../../data/mockUsers';
@@ -113,55 +116,53 @@ function OrderDetailPanel({ order }: { order: B2BOrder }) {
         <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2">
           Order Lines ({order.lines.length})
         </p>
-        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-gray-100 text-gray-400">
-                <th className="text-left px-3 py-2.5 font-medium">Product</th>
-                <th className="text-center px-3 py-2.5 font-medium">Requested</th>
-                <th className="text-center px-3 py-2.5 font-medium">Allocated</th>
-                <th className="text-right px-3 py-2.5 font-medium">Unit Price</th>
-                <th className="text-right px-3 py-2.5 font-medium">Disc %</th>
-                <th className="text-right px-3 py-2.5 font-medium">GST</th>
-                <th className="text-right px-3 py-2.5 font-medium">Line Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {order.lines.map(line => {
-                const product = productById.get(line.productId);
-                const allocationShort = line.allocatedQty < line.requestedQty;
-                return (
-                  <tr key={line.id} className={allocationShort ? 'bg-amber-50' : ''}>
-                    <td className="px-3 py-2.5">
-                      <p className="font-medium text-gray-800 leading-snug">{line.productName}</p>
-                      <p className="text-gray-400 font-mono">{line.sku}</p>
-                      {product?.isSubsidised && (
-                        <span className="text-[9px] bg-yellow-100 text-yellow-700 font-bold px-1 py-0.5 rounded">Subsidised</span>
-                      )}
-                    </td>
-                    <td className="text-center px-3 py-2.5 text-gray-700">
-                      {line.requestedQty} {line.unit}
-                    </td>
-                    <td className="text-center px-3 py-2.5">
-                      <span className={allocationShort ? 'text-amber-600 font-semibold' : 'text-gray-700'}>
-                        {line.allocatedQty} {line.unit}
-                      </span>
-                    </td>
-                    <td className="text-right px-3 py-2.5 text-gray-700">{fmt(line.unitPrice)}</td>
-                    <td className="text-right px-3 py-2.5">
-                      {line.lineDiscountPct > 0
-                        ? <span className="text-emerald-600 font-medium">{line.lineDiscountPct}%</span>
-                        : <span className="text-gray-400">—</span>
-                      }
-                    </td>
-                    <td className="text-right px-3 py-2.5 text-gray-500">{fmt(line.taxAmt)}</td>
-                    <td className="text-right px-3 py-2.5 font-semibold text-gray-900">{fmt(line.lineTotal)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <TableWrap>
+          <thead>
+            <tr>
+              <Th>Product</Th>
+              <Th>Requested</Th>
+              <Th>Allocated</Th>
+              <Th right>Unit Price</Th>
+              <Th right>Disc %</Th>
+              <Th right>GST</Th>
+              <Th right>Line Total</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {order.lines.map(line => {
+              const product = productById.get(line.productId);
+              const allocationShort = line.allocatedQty < line.requestedQty;
+              return (
+                <Tr key={line.id} className={allocationShort ? 'bg-amber-50' : ''}>
+                  <Td>
+                    <p className="font-medium text-gray-800 leading-snug">{line.productName}</p>
+                    <p className="text-gray-400 font-mono text-[11px]">{line.sku}</p>
+                    {product?.isSubsidised && (
+                      <span className="text-[9px] bg-yellow-100 text-yellow-700 font-bold px-1 py-0.5 rounded">Subsidised</span>
+                    )}
+                  </Td>
+                  <Td>
+                    {line.requestedQty} {line.unit}
+                  </Td>
+                  <Td>
+                    <span className={allocationShort ? 'text-amber-600 font-semibold' : ''}>
+                      {line.allocatedQty} {line.unit}
+                    </span>
+                  </Td>
+                  <Td right>{fmt(line.unitPrice)}</Td>
+                  <Td right>
+                    {line.lineDiscountPct > 0
+                      ? <span className="text-emerald-600 font-medium">{line.lineDiscountPct}%</span>
+                      : <span className="text-gray-400">—</span>
+                    }
+                  </Td>
+                  <Td right muted>{fmt(line.taxAmt)}</Td>
+                  <Td right bold>{fmt(line.lineTotal)}</Td>
+                </Tr>
+              );
+            })}
+          </tbody>
+        </TableWrap>
       </div>
 
       {/* Totals row */}
@@ -247,13 +248,9 @@ export default function B2BOrderList() {
           <h1 className="text-xl font-bold text-gray-900">B2B Orders</h1>
           <p className="text-sm text-gray-500 mt-0.5">{orders.length} orders · All zones</p>
         </div>
-        <button
-          onClick={() => navigate('/b2b-new')}
-          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl transition-colors"
-        >
-          <Plus size={16} />
+        <Button variant="primary" iconLeft={Plus} onClick={() => navigate('/b2b-new')}>
           New Order
-        </button>
+        </Button>
       </div>
 
       {/* ── Stats cards ────────────────────────────────────────────────── */}
@@ -278,15 +275,12 @@ export default function B2BOrderList() {
       {/* ── Search + filter row ─────────────────────────────────────────── */}
       <div className="space-y-2">
         <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search order number or retailer…"
-              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            />
-          </div>
+          <SearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search order number or retailer…"
+            className="flex-1"
+          />
           <button
             onClick={() => setShowFilters(v => !v)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-colors ${

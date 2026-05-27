@@ -1,6 +1,5 @@
-import { Bell, ChevronRight, Store } from 'lucide-react';
+import { Bell, ChevronRight } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 
 const ROUTE_LABELS: Record<string, string> = {
   '/':                'Dashboard',
@@ -20,53 +19,74 @@ const ROUTE_LABELS: Record<string, string> = {
   '/reports':         'Reports',
   '/credit-notes':    'Credit Notes',
   '/b2b-receivables': 'B2B Receivables',
-  '/analytics':       'Ops Dashboard',
+  '/analytics':       'Operations',
   '/tier-management': 'Tier Management',
   '/coupons':         'Coupons',
   '/settings':        'Settings',
+  '/compliance':      'Compliance',
+  '/procurement':     'Procurement',
 };
 
 export default function Topbar() {
-  const { currentUser, currentStore } = useAuth();
   const location = useLocation();
-
   const pageLabel = ROUTE_LABELS[location.pathname] ?? 'Page';
 
   return (
-    <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 flex-shrink-0 z-10">
+    <header
+      style={{
+        height: '56px',
+        backgroundColor: 'var(--bg-card)',
+        borderBottom: '1px solid var(--border)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingInline: '32px',
+        flexShrink: 0,
+        zIndex: 10,
+        position: 'relative',
+      }}
+    >
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5">
-        <span className="text-gray-400 text-xs font-medium tracking-wide">ARMS</span>
-        <ChevronRight size={12} className="text-gray-300 flex-shrink-0" />
-        <span className="text-gray-900 font-semibold text-sm">{pageLabel}</span>
+      <nav style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 400 }}>ARMS</span>
+        <ChevronRight size={12} style={{ color: 'var(--text-muted)' }} />
+        <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 500 }}>
+          {pageLabel}
+        </span>
       </nav>
 
-      {/* Right side */}
-      <div className="flex items-center gap-2">
-        {/* Store chip — visible when user is store-scoped */}
-        {currentStore && (
-          <div className="hidden md:flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1 text-xs">
-            <Store size={11} className="text-gray-400 flex-shrink-0" />
-            <span className="font-medium text-gray-700 truncate max-w-36">{currentStore.name}</span>
-            <span className="text-gray-400 font-mono">{currentStore.code}</span>
-          </div>
-        )}
-
-        {/* Notifications */}
-        <button className="relative w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-500">
-          <Bell size={17} />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
-        </button>
-
-        {/* Avatar — static, role switching is in the sidebar */}
-        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 text-xs font-bold flex-shrink-0">
-          {currentUser.name
-            .split(' ')
-            .map((n) => n[0])
-            .slice(0, 2)
-            .join('')}
-        </div>
-      </div>
+      {/* Right — notification bell only */}
+      <button
+        style={{
+          position: 'relative',
+          width: '34px',
+          height: '34px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 'var(--radius-md)',
+          backgroundColor: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          color: 'var(--text-secondary)',
+          transition: 'background-color 120ms',
+        }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'var(--bg-page)'; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
+      >
+        <Bell size={17} />
+        <span
+          style={{
+            position: 'absolute',
+            top: '6px',
+            right: '6px',
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            backgroundColor: '#ef4444',
+          }}
+        />
+      </button>
     </header>
   );
 }

@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Search, Plus, Phone, MapPin, Sprout } from 'lucide-react';
+import { Plus, Phone, MapPin, Sprout } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
+import Button from '../../components/ui/Button';
+import { SearchInput } from '../../components/ui/Input';
 import Badge, { statusVariant } from '../../components/ui/Badge';
 import { mockFarmers } from '../../data/mockFarmers';
 import { walletByFarmerId } from '../../data/mockLoyaltyWallets';
@@ -33,22 +35,19 @@ export default function FarmersPage() {
         title="Farmers"
         subtitle="Registered farmer profiles and KYC management"
         actions={
-          <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
-            <Plus size={15} />
+          <Button variant="primary" iconLeft={Plus}>
             Register Farmer
-          </button>
+          </Button>
         }
       />
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-5">
-        <div className="relative flex-1 min-w-60">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
+        <div className="flex-1 min-w-60">
+          <SearchInput
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={setSearch}
             placeholder="Search by name, mobile, village or district..."
-            className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
           />
         </div>
         {['All', 'Verified', 'Pending', 'Rejected'].map((k) => (

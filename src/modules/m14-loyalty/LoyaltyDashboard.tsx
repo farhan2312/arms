@@ -6,7 +6,6 @@ import { useMemo, useState } from 'react';
 import {
   Users, TrendingUp, Award, AlertTriangle,
   Bell, Coins, ChevronRight, RefreshCw,
-  BarChart3, Search, SlidersHorizontal,
 } from 'lucide-react';
 import { mockLoyaltyWallets, walletByFarmerId } from '../../data/mockLoyaltyWallets';
 import { farmerById } from '../../data/mockFarmers';
@@ -14,6 +13,11 @@ import { mockSaleTransactions } from '../../data/mockSaleTransactions';
 import type { LoyaltyTier } from '../../types/loyalty';
 import TierManagementPanel from './TierManagementPanel';
 import LoyaltyLookupTab from '../m06-crm/LoyaltyLookupTab';
+import PageHeader from '../../components/ui/PageHeader';
+import Tabs from '../../components/ui/Tabs';
+import { Card, CardHeader } from '../../components/ui/Card';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
+import EmptyState from '../../components/ui/EmptyState';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -41,13 +45,6 @@ function fmtRs(n: number) { return `₹${fmt(n)}`; }
 // ── Tab definition ────────────────────────────────────────────────────────────
 
 type LoyaltyTab = 'overview' | 'wallet' | 'at-risk' | 'tiers';
-
-const TABS: { key: LoyaltyTab; label: string; icon: React.ElementType }[] = [
-  { key: 'overview', label: 'Overview',         icon: BarChart3         },
-  { key: 'wallet',   label: 'Wallet Lookup',    icon: Search            },
-  { key: 'at-risk',  label: 'At-Risk Farmers',  icon: AlertTriangle     },
-  { key: 'tiers',    label: 'Tier Management',  icon: SlidersHorizontal },
-];
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -117,51 +114,32 @@ export default function LoyaltyDashboard() {
     });
   }
 
+  const loyaltyTabs = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'wallet',   label: 'Wallet Lookup' },
+    { id: 'at-risk',  label: 'At-Risk Farmers', badge: atRisk.length > 0 ? atRisk.length : undefined },
+    { id: 'tiers',    label: 'Tier Management' },
+  ];
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full">
 
       {/* Page header */}
-      <div className="px-6 py-5 border-b border-gray-200 bg-white flex-shrink-0">
-        <h1 className="text-lg font-bold text-gray-900">Loyalty Programme</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
-          {mockLoyaltyWallets.length} wallets · {Object.keys(tierCounts).length} tiers · as of {TODAY}
-        </p>
-      </div>
-
-      {/* Tab bar */}
-      <div className="flex-shrink-0 border-b border-gray-200 bg-white px-6">
-        <nav className="flex gap-1 -mb-px">
-          {TABS.map(t => {
-            const Icon = t.icon;
-            const isActive = tab === t.key;
-            const badge = t.key === 'at-risk' && atRisk.length > 0 ? atRisk.length : null;
-            return (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={[
-                  'flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',
-                  isActive
-                    ? 'border-emerald-600 text-emerald-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300',
-                ].join(' ')}
-              >
-                <Icon size={14} className="flex-shrink-0" />
-                {t.label}
-                {badge !== null && (
-                  <span className="ml-0.5 text-[10px] bg-amber-100 text-amber-700 font-bold px-1.5 py-0.5 rounded-full">
-                    {badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
+      <div className="px-6 py-5 border-b flex-shrink-0" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--bg-card)' }}>
+        <PageHeader
+          title="Loyalty Programme"
+          subtitle={`${mockLoyaltyWallets.length} wallets · ${Object.keys(tierCounts).length} tiers · as of ${TODAY}`}
+        />
+        <Tabs
+          tabs={loyaltyTabs}
+          activeTab={tab}
+          onTabChange={(id) => setTab(id as LoyaltyTab)}
+        />
       </div>
 
       {/* Tab content */}
-      <div className="flex-1 overflow-y-auto bg-gray-50">
+      <div className="flex-1 overflow-y-auto" style={{ backgroundColor: 'var(--bg-page)' }}>
 
         {/* ── Overview ────────────────────────────────────────────────────── */}
         {tab === 'overview' && (
@@ -169,16 +147,16 @@ export default function LoyaltyDashboard() {
 
             {/* KPI cards */}
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-              <KpiCard icon={<Users size={18} className="text-blue-600" />}       bg="bg-blue-50"   label="Total Enrolled"   value={fmt(kpis.totalEnrolled)}                              sub="farmers registered" />
-              <KpiCard icon={<TrendingUp size={18} className="text-emerald-600" />} bg="bg-emerald-50" label="Active (90 days)"  value={fmt(kpis.activeCount)}                              sub={`${fmt((kpis.activeCount / kpis.totalEnrolled) * 100, 0)}% of enrolled`} />
-              <KpiCard icon={<Coins size={18} className="text-amber-600" />}       bg="bg-amber-50"  label="Points Issued"    value={fmt(kpis.pointsIssued)}                              sub="lifetime total" />
-              <KpiCard icon={<Award size={18} className="text-purple-600" />}      bg="bg-purple-50" label="Points Redeemed"  value={fmt(kpis.pointsRedeemed)}                            sub="lifetime total" />
-              <KpiCard icon={<RefreshCw size={18} className="text-rose-600" />}    bg="bg-rose-50"   label="Redemption Rate" value={`${fmt(kpis.redemptionRate, 1)}%`}                   sub="redeemed / issued" />
+              <StatCard icon={<Users size={18} className="text-blue-600" />}       bg="bg-blue-50"   label="Total Enrolled"   value={fmt(kpis.totalEnrolled)}                              sub="farmers registered" />
+              <StatCard icon={<TrendingUp size={18} className="text-emerald-600" />} bg="bg-emerald-50" label="Active (90 days)"  value={fmt(kpis.activeCount)}                              sub={`${fmt((kpis.activeCount / kpis.totalEnrolled) * 100, 0)}% of enrolled`} />
+              <StatCard icon={<Coins size={18} className="text-amber-600" />}       bg="bg-amber-50"  label="Points Issued"    value={fmt(kpis.pointsIssued)}                              sub="lifetime total" />
+              <StatCard icon={<Award size={18} className="text-purple-600" />}      bg="bg-purple-50" label="Points Redeemed"  value={fmt(kpis.pointsRedeemed)}                            sub="lifetime total" />
+              <StatCard icon={<RefreshCw size={18} className="text-rose-600" />}    bg="bg-rose-50"   label="Redemption Rate" value={`${fmt(kpis.redemptionRate, 1)}%`}                   sub="redeemed / issued" />
             </div>
 
             {/* Tier distribution */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-5">
-              <h2 className="text-sm font-semibold text-gray-800 mb-4">Tier Distribution</h2>
+            <Card padding="20px">
+              <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Tier Distribution</h2>
               <div className="space-y-3">
                 {TIER_ORDER.map(tier => {
                   const count = tierCounts[tier] ?? 0;
@@ -214,45 +192,45 @@ export default function LoyaltyDashboard() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
 
             {/* Top 10 farmers */}
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-gray-800">Top 10 Farmers by Spend</h2>
-                <span className="text-[10px] text-gray-400 uppercase tracking-widest">Lifetime</span>
-              </div>
-              <table className="w-full text-xs">
+            <div>
+              <CardHeader
+                title="Top 10 Farmers by Spend"
+                right={<span className="text-[10px] text-gray-400 uppercase tracking-widest">Lifetime</span>}
+              />
+              <TableWrap>
                 <thead>
-                  <tr className="border-b border-gray-50 text-gray-400">
-                    <th className="text-left px-4 py-2.5 font-medium w-6">#</th>
-                    <th className="text-left px-4 py-2.5 font-medium">Farmer</th>
-                    <th className="text-center px-4 py-2.5 font-medium">Tier</th>
-                    <th className="text-right px-4 py-2.5 font-medium">Spend</th>
-                    <th className="text-right px-4 py-2.5 font-medium">Pts Balance</th>
+                  <tr>
+                    <Th>#</Th>
+                    <Th>Farmer</Th>
+                    <Th>Tier</Th>
+                    <Th right>Spend</Th>
+                    <Th right>Pts Balance</Th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody>
                   {top10.map(({ rank, farmer, wallet, totalSpend }) => {
                     const tier = wallet?.tier ?? 'Green';
                     const style = TIER_STYLE[tier];
                     return (
-                      <tr key={rank} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-2.5 text-gray-400 font-mono font-medium">{rank}</td>
-                        <td className="px-4 py-2.5">
-                          <p className="font-semibold text-gray-800 leading-snug">{farmer?.name ?? 'Unknown'}</p>
-                          <p className="text-[10px] text-gray-400">{farmer?.address.district}</p>
-                        </td>
-                        <td className="px-4 py-2.5 text-center">
+                      <Tr key={rank}>
+                        <Td mono muted>{rank}</Td>
+                        <Td>
+                          <p className="font-semibold leading-snug" style={{ color: 'var(--text-primary)' }}>{farmer?.name ?? 'Unknown'}</p>
+                          <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{farmer?.address.district}</p>
+                        </Td>
+                        <Td>
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${style.bg} ${style.text}`}>{tier}</span>
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-semibold text-gray-900 tabular-nums">{fmtRs(totalSpend)}</td>
-                        <td className="px-4 py-2.5 text-right text-gray-600 tabular-nums">{fmt(wallet?.currentPoints ?? 0)}</td>
-                      </tr>
+                        </Td>
+                        <Td right bold>{fmtRs(totalSpend)}</Td>
+                        <Td right muted>{fmt(wallet?.currentPoints ?? 0)}</Td>
+                      </Tr>
                     );
                   })}
                 </tbody>
-              </table>
+              </TableWrap>
             </div>
 
             {/* At-risk callout — nudge to switch tab */}
@@ -284,11 +262,11 @@ export default function LoyaltyDashboard() {
           <div className="p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                <h2 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
                   <AlertTriangle size={15} className="text-amber-500" />
                   At-Risk Farmers
                 </h2>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                   Gold &amp; Platinum farmers with no purchase in 45+ days · {atRisk.length} found
                 </p>
               </div>
@@ -304,83 +282,80 @@ export default function LoyaltyDashboard() {
             </div>
 
             {atRisk.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-200 px-5 py-16 text-center">
-                <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-3">
-                  <Award size={22} className="text-emerald-500" />
-                </div>
-                <p className="text-sm font-semibold text-gray-700">All clear!</p>
-                <p className="text-xs text-gray-400 mt-1">All Gold &amp; Platinum farmers have purchased within the last 45 days.</p>
-              </div>
+              <EmptyState
+                icon={Award}
+                iconColor="#22c55e"
+                title="All clear!"
+                subtitle="All Gold & Platinum farmers have purchased within the last 45 days."
+              />
             ) : (
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-gray-100 bg-gray-50 text-gray-400">
-                      <th className="text-left px-5 py-3 font-medium">Farmer</th>
-                      <th className="text-left px-5 py-3 font-medium">Tier</th>
-                      <th className="text-left px-5 py-3 font-medium">District</th>
-                      <th className="text-left px-5 py-3 font-medium">Last Purchase</th>
-                      <th className="text-right px-5 py-3 font-medium">Days Inactive</th>
-                      <th className="text-right px-5 py-3 font-medium">Points Balance</th>
-                      <th className="px-5 py-3" />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {atRisk.map(({ wallet, farmer, lastPurchase, daysSince }) => {
-                      const isFlagged = flagged.has(wallet.id);
-                      const style = TIER_STYLE[wallet.tier];
-                      return (
-                        <tr key={wallet.id} className={`transition-colors ${isFlagged ? 'bg-amber-50/50 hover:bg-amber-50' : 'hover:bg-gray-50'}`}>
-                          <td className="px-5 py-3">
-                            <p className="font-semibold text-gray-800">{farmer?.name ?? wallet.farmerId}</p>
-                            <p className="text-[10px] text-gray-400">{farmer?.mobile}</p>
-                          </td>
-                          <td className="px-5 py-3">
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${style.bg} ${style.text}`}>
-                              {wallet.tier}
-                            </span>
-                          </td>
-                          <td className="px-5 py-3 text-gray-500">{farmer?.address.district ?? '—'}</td>
-                          <td className="px-5 py-3 text-gray-500">
-                            {lastPurchase ?? <span className="italic text-gray-300">Never</span>}
-                          </td>
-                          <td className="px-5 py-3 text-right">
-                            <span className={`font-semibold tabular-nums ${
-                              (daysSince ?? 999) >= 90 ? 'text-red-600' : 'text-amber-600'
-                            }`}>
-                              {daysSince !== null ? `${daysSince}d` : '—'}
-                            </span>
-                          </td>
-                          <td className="px-5 py-3 text-right tabular-nums text-gray-600">
-                            {wallet.currentPoints.toLocaleString('en-IN')}
-                          </td>
-                          <td className="px-5 py-3 text-right">
-                            <button
-                              onClick={() => toggleFlag(wallet.id)}
-                              className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${
-                                isFlagged
-                                  ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                                  : 'bg-gray-100 text-gray-600 hover:bg-amber-50 hover:text-amber-700'
-                              }`}
-                            >
-                              <Bell size={11} />
-                              {isFlagged ? 'Flagged' : 'Flag for Outreach'}
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <TableWrap>
+                <thead>
+                  <tr>
+                    <Th>Farmer</Th>
+                    <Th>Tier</Th>
+                    <Th>District</Th>
+                    <Th>Last Purchase</Th>
+                    <Th right>Days Inactive</Th>
+                    <Th right>Points Balance</Th>
+                    <Th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {atRisk.map(({ wallet, farmer, lastPurchase, daysSince }) => {
+                    const isFlagged = flagged.has(wallet.id);
+                    const style = TIER_STYLE[wallet.tier];
+                    return (
+                      <Tr key={wallet.id} className={isFlagged ? 'bg-amber-50/50' : ''}>
+                        <Td>
+                          <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{farmer?.name ?? wallet.farmerId}</p>
+                          <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{farmer?.mobile}</p>
+                        </Td>
+                        <Td>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${style.bg} ${style.text}`}>
+                            {wallet.tier}
+                          </span>
+                        </Td>
+                        <Td muted>{farmer?.address.district ?? '—'}</Td>
+                        <Td muted>
+                          {lastPurchase ?? <span className="italic text-gray-300">Never</span>}
+                        </Td>
+                        <Td right>
+                          <span className={`font-semibold tabular-nums ${
+                            (daysSince ?? 999) >= 90 ? 'text-red-600' : 'text-amber-600'
+                          }`}>
+                            {daysSince !== null ? `${daysSince}d` : '—'}
+                          </span>
+                        </Td>
+                        <Td right muted>
+                          {wallet.currentPoints.toLocaleString('en-IN')}
+                        </Td>
+                        <Td right>
+                          <button
+                            onClick={() => toggleFlag(wallet.id)}
+                            className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors ${
+                              isFlagged
+                                ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                                : 'bg-gray-100 text-gray-600 hover:bg-amber-50 hover:text-amber-700'
+                            }`}
+                          >
+                            <Bell size={11} />
+                            {isFlagged ? 'Flagged' : 'Flag for Outreach'}
+                          </button>
+                        </Td>
+                      </Tr>
+                    );
+                  })}
+                </tbody>
+              </TableWrap>
+            )}
 
-                {flagged.size > 0 && (
-                  <div className="px-5 py-3 border-t border-amber-100 bg-amber-50 flex items-center gap-2">
-                    <ChevronRight size={12} className="text-amber-600" />
-                    <p className="text-[11px] text-amber-700">
-                      {flagged.size} farmer{flagged.size !== 1 ? 's' : ''} flagged — click "Send Flags to Field Team" to dispatch outreach requests.
-                    </p>
-                  </div>
-                )}
+            {flagged.size > 0 && atRisk.length > 0 && (
+              <div className="px-5 py-3 border border-amber-100 rounded-xl bg-amber-50 flex items-center gap-2">
+                <ChevronRight size={12} className="text-amber-600" />
+                <p className="text-[11px] text-amber-700">
+                  {flagged.size} farmer{flagged.size !== 1 ? 's' : ''} flagged — click "Send Flags to Field Team" to dispatch outreach requests.
+                </p>
               </div>
             )}
           </div>
@@ -389,7 +364,7 @@ export default function LoyaltyDashboard() {
         {/* ── Tier Management ─────────────────────────────────────────────── */}
         {tab === 'tiers' && (
           <div className="p-6">
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            <div style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
               <TierManagementPanel />
             </div>
           </div>
@@ -400,17 +375,24 @@ export default function LoyaltyDashboard() {
   );
 }
 
-// ── KpiCard sub-component ─────────────────────────────────────────────────────
+// ── StatCard sub-component ────────────────────────────────────────────────────
 
-interface KpiCardProps { icon: React.ReactNode; bg: string; label: string; value: string; sub: string; }
+interface StatCardProps { icon: React.ReactNode; bg: string; label: string; value: string; sub: string; }
 
-function KpiCard({ icon, bg, label, value, sub }: KpiCardProps) {
+function StatCard({ icon, bg, label, value, sub }: StatCardProps) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 px-4 py-4">
+    <div
+      style={{
+        backgroundColor: 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '16px',
+      }}
+    >
       <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center mb-3`}>{icon}</div>
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="text-xl font-bold text-gray-900 mt-0.5 tabular-nums">{value}</p>
-      <p className="text-[10px] text-gray-400 mt-0.5">{sub}</p>
+      <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{label}</p>
+      <p className="text-xl font-bold mt-0.5 tabular-nums" style={{ color: 'var(--text-primary)' }}>{value}</p>
+      <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{sub}</p>
     </div>
   );
 }

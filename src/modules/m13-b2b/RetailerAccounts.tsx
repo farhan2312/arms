@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { CheckCircle2 } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
+import { useToast } from '../../hooks/useToast';
 import { mockRetailers } from '../../data/mockRetailers';
 import { mockB2BOrders } from '../../data/mockB2BOrders';
 import type { RetailerAccount } from '../../types/b2b';
@@ -13,7 +13,7 @@ export default function RetailerAccounts() {
   const [selectedId, setSelectedId]         = useState<string | null>(null);
   const [showForm, setShowForm]             = useState(false);
   const [editingRetailer, setEditingRetailer] = useState<RetailerAccount | undefined>(undefined);
-  const [toast, setToast]                   = useState<string | null>(null);
+  const toast                               = useToast();
 
   const selected = selectedId ? (retailers.find((r) => r.id === selectedId) ?? null) : null;
 
@@ -30,10 +30,10 @@ export default function RetailerAccounts() {
   function handleSave(saved: RetailerAccount) {
     if (editingRetailer) {
       setRetailers((prev) => prev.map((r) => (r.id === saved.id ? saved : r)));
-      showToast(`${saved.firmName} updated`);
+      toast.success(`${saved.firmName} updated`);
     } else {
       setRetailers((prev) => [saved, ...prev]);
-      showToast(`${saved.firmName} added successfully`);
+      toast.success(`${saved.firmName} added successfully`);
     }
     setShowForm(false);
     setEditingRetailer(undefined);
@@ -43,11 +43,6 @@ export default function RetailerAccounts() {
     setRetailers((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
     // Keep the selected view reflecting the latest data
     setSelectedId(updated.id);
-  }
-
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
   }
 
   return (
@@ -81,13 +76,6 @@ export default function RetailerAccounts() {
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditingRetailer(undefined); }}
         />
-      )}
-
-      {toast && (
-        <div className="fixed bottom-6 right-6 flex items-center gap-2.5 bg-gray-900 text-white text-sm font-medium px-5 py-3 rounded-xl shadow-2xl z-[100]">
-          <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0" />
-          {toast}
-        </div>
       )}
     </div>
   );

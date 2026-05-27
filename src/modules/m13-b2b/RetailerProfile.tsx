@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { ArrowLeft, Upload, CheckCircle2, AlertTriangle, FileText, ShoppingBag, Shield, User } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
+import { Card } from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
+import { Select } from '../../components/ui/Input';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../hooks/useToast';
 import type { RetailerAccount, B2BOrder, RetailerTier, B2BOrderStatus } from '../../types/b2b';
 import { MOCK_USERS } from '../../data/mockUsers';
 
@@ -11,15 +16,15 @@ const TIER_BADGE: Record<RetailerTier, 'gray' | 'blue' | 'yellow' | 'purple'> = 
   Standard: 'gray', Silver: 'blue', Gold: 'yellow', Preferred: 'purple',
 };
 
-const ORDER_STATUS_STYLE: Record<B2BOrderStatus, string> = {
-  Draft:       'bg-gray-100 text-gray-600',
-  Submitted:   'bg-blue-100 text-blue-700',
-  UnderReview: 'bg-amber-100 text-amber-700',
-  Approved:    'bg-emerald-100 text-emerald-700',
-  Allocated:   'bg-teal-100 text-teal-700',
-  Dispatched:  'bg-violet-100 text-violet-700',
-  Delivered:   'bg-green-100 text-green-700',
-  Invoiced:    'bg-slate-200 text-slate-700',
+const ORDER_STATUS_BADGE: Record<B2BOrderStatus, 'gray' | 'blue' | 'amber' | 'green' | 'purple'> = {
+  Draft:       'gray',
+  Submitted:   'blue',
+  UnderReview: 'amber',
+  Approved:    'green',
+  Allocated:   'blue',
+  Dispatched:  'purple',
+  Delivered:   'green',
+  Invoiced:    'gray',
 };
 
 type ProfileTab = 'statement' | 'orders' | 'kyc' | 'contact';
@@ -103,6 +108,12 @@ function creditTermLabel(days: number) {
   return `${days}-Day Credit`;
 }
 
+const ENTRY_TYPE_BADGE: Record<LedgerEntry['type'], 'gray' | 'green' | 'blue'> = {
+  Invoice:    'gray',
+  Payment:    'green',
+  CreditNote: 'blue',
+};
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -114,33 +125,34 @@ interface Props {
 
 export default function RetailerProfile({ retailer, orders, onBack, onUpdate }: Props) {
   const { hasRole } = useAuth();
-  const [tab, setTab]                   = useState<ProfileTab>('statement');
+  const toast = useToast();
+
+  const [tab, setTab]                       = useState<ProfileTab>('statement');
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showCreditEdit, setShowCreditEdit] = useState(false);
-  const [newLimit, setNewLimit]         = useState(String(retailer.creditLimitAmt));
-  const [creditReason, setCreditReason] = useState('');
-  const [kycDocs, setKycDocs]           = useState<KycDoc[]>([
-    { label: 'GST Certificate',              fileName: 'gst_cert.pdf',    uploadedAt: '2024-04-15' },
-    { label: 'Shop Registration / Trade Lic', fileName: null,             uploadedAt: null },
+  const [newLimit, setNewLimit]             = useState(String(retailer.creditLimitAmt));
+  const [creditReason, setCreditReason]     = useState('');
+  const [kycDocs, setKycDocs]               = useState<KycDoc[]>([
+    { label: 'GST Certificate',               fileName: 'gst_cert.pdf', uploadedAt: '2024-04-15' },
+    { label: 'Shop Registration / Trade Lic', fileName: null,           uploadedAt: null },
   ]);
 
   // Contact edit state
   const exec = retailer.salesExecUserId ? MOCK_USERS.find((u) => u.id === retailer.salesExecUserId) : undefined;
   const [contactForm, setContactForm] = useState({
-    ownerName:   retailer.ownerName,
-    mobile:      retailer.mobile,
-    email:       retailer.email ?? '',
-    line1:       retailer.address.line1,
-    payTerms:    retailer.creditDays,
+    ownerName: retailer.ownerName,
+    mobile:    retailer.mobile,
+    email:     retailer.email ?? '',
+    line1:     retailer.address.line1,
+    payTerms:  retailer.creditDays,
   });
-  const [contactSaved, setContactSaved] = useState(false);
 
   const canEditCredit = hasRole(['OperationsHead', 'Finance', 'Admin', 'SuperAdmin']);
 
-  const available   = retailer.creditLimitAmt - retailer.outstandingAmt;
-  const availPct    = retailer.creditLimitAmt > 0 ? Math.max(0, (available / retailer.creditLimitAmt) * 100) : 100;
+  const available    = retailer.creditLimitAmt - retailer.outstandingAmt;
+  const availPct     = retailer.creditLimitAmt > 0 ? Math.max(0, (available / retailer.creditLimitAmt) * 100) : 100;
   const retailerOrders = orders.filter((o) => o.retailerId === retailer.id);
-  const ledger      = buildLedger(retailer, orders);
+  const ledger       = buildLedger(retailer, orders);
 
   function handleSaveCredit() {
     const val = parseFloat(newLimit);
@@ -148,11 +160,13 @@ export default function RetailerProfile({ retailer, orders, onBack, onUpdate }: 
     onUpdate({ ...retailer, creditLimitAmt: val, updatedAt: new Date().toISOString() });
     setShowCreditEdit(false);
     setCreditReason('');
+    toast.success('Credit limit updated', `New limit: ${fmt(val)}`);
   }
 
   function handleBlock() {
     onUpdate({ ...retailer, isActive: false, updatedAt: new Date().toISOString() });
     setShowBlockModal(false);
+    toast.warning('Account blocked', `${retailer.firmName} has been suspended.`);
     onBack();
   }
 
@@ -166,14 +180,14 @@ export default function RetailerProfile({ retailer, orders, onBack, onUpdate }: 
       creditDays: contactForm.payTerms,
       updatedAt:  new Date().toISOString(),
     });
-    setContactSaved(true);
-    setTimeout(() => setContactSaved(false), 2500);
+    toast.success('Contact info saved');
   }
 
   function uploadKyc(idx: number, e: React.ChangeEvent<HTMLInputElement>) {
     const name = e.target.files?.[0]?.name ?? null;
     if (!name) return;
     setKycDocs((prev) => prev.map((d, i) => i === idx ? { ...d, fileName: name, uploadedAt: new Date().toISOString().slice(0, 10) } : d));
+    toast.success('Document uploaded', name);
   }
 
   return (
@@ -188,7 +202,7 @@ export default function RetailerProfile({ retailer, orders, onBack, onUpdate }: 
           Back to Retailer Accounts
         </button>
 
-        <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <Card padding="24px">
           <div className="flex items-start justify-between gap-4 mb-5">
             <div className="min-w-0">
               <div className="flex items-center gap-3 flex-wrap mb-1">
@@ -197,24 +211,28 @@ export default function RetailerProfile({ retailer, orders, onBack, onUpdate }: 
                 {!retailer.isActive && <Badge label="Blocked" variant="red" />}
               </div>
               <p className="text-xs text-gray-500 font-mono">GSTIN: {retailer.gstIn}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{retailer.address.district}, {retailer.address.state} · {creditTermLabel(retailer.creditDays)}</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {retailer.address.district}, {retailer.address.state} · {creditTermLabel(retailer.creditDays)}
+              </p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               {canEditCredit && (
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => setShowCreditEdit(true)}
-                  className="px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors"
                 >
                   Edit Credit Limit
-                </button>
+                </Button>
               )}
               {retailer.isActive && (
-                <button
+                <Button
+                  variant="danger"
+                  size="sm"
                   onClick={() => setShowBlockModal(true)}
-                  className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
                 >
                   Block Account
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -247,7 +265,7 @@ export default function RetailerProfile({ retailer, orders, onBack, onUpdate }: 
             />
           </div>
           <p className="text-[11px] text-gray-400 mt-1">{availPct.toFixed(0)}% credit available</p>
-        </div>
+        </Card>
       </div>
 
       {/* Tabs */}
@@ -270,123 +288,119 @@ export default function RetailerProfile({ retailer, orders, onBack, onUpdate }: 
 
       {/* ── Account Statement ──────────────────────────────────────────────── */}
       {tab === 'statement' && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          {ledger.length === 0 ? (
-            <p className="px-6 py-10 text-sm text-gray-400 text-center">No transactions recorded yet.</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Reference</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Debit</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Credit</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Balance</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {ledger.map((e) => (
-                  <tr key={e.id} className={e.type === 'Payment' ? 'bg-emerald-50/40' : e.type === 'CreditNote' ? 'bg-blue-50/40' : ''}>
-                    <td className="px-4 py-3 text-xs text-gray-500">{e.date}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${
-                        e.type === 'Invoice'    ? 'bg-gray-100 text-gray-700' :
-                        e.type === 'Payment'   ? 'bg-emerald-100 text-emerald-700' :
-                        'bg-blue-100 text-blue-700'
-                      }`}>
-                        {e.type}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs font-mono text-gray-700">{e.reference}</td>
-                    <td className="px-4 py-3 text-right text-xs text-gray-700">{e.debit > 0 ? fmt(e.debit) : '—'}</td>
-                    <td className="px-4 py-3 text-right text-xs text-emerald-600">{e.credit > 0 ? fmt(e.credit) : '—'}</td>
-                    <td className={`px-4 py-3 text-right text-xs font-semibold ${e.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+        ledger.length === 0 ? (
+          <p className="px-6 py-10 text-sm text-gray-400 text-center">No transactions recorded yet.</p>
+        ) : (
+          <TableWrap>
+            <thead>
+              <tr>
+                <Th>Date</Th>
+                <Th>Type</Th>
+                <Th>Reference</Th>
+                <Th right>Debit</Th>
+                <Th right>Credit</Th>
+                <Th right>Balance</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {ledger.map((e) => (
+                <Tr key={e.id} className={e.type === 'Payment' ? 'bg-emerald-50/40' : e.type === 'CreditNote' ? 'bg-blue-50/40' : ''}>
+                  <Td muted>{e.date}</Td>
+                  <Td>
+                    <Badge variant={ENTRY_TYPE_BADGE[e.type]}>{e.type}</Badge>
+                  </Td>
+                  <Td mono>{e.reference}</Td>
+                  <Td right muted>{e.debit > 0 ? fmt(e.debit) : '—'}</Td>
+                  <Td right>
+                    <span className="text-emerald-600 text-xs">{e.credit > 0 ? fmt(e.credit) : '—'}</span>
+                  </Td>
+                  <Td right bold>
+                    <span className={`text-xs ${e.balance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                       {e.balance > 0 ? fmt(e.balance) + ' Dr' : e.balance < 0 ? fmt(e.balance) + ' Cr' : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                    </span>
+                  </Td>
+                </Tr>
+              ))}
+            </tbody>
+          </TableWrap>
+        )
       )}
 
       {/* ── Orders ────────────────────────────────────────────────────────── */}
       {tab === 'orders' && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          {retailerOrders.length === 0 ? (
-            <p className="px-6 py-10 text-sm text-gray-400 text-center">No orders found for this retailer.</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Order No.</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Payment</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Items</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {retailerOrders.map((o) => (
-                  <tr key={o.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-xs font-mono font-medium text-emerald-700">{o.orderNo}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{o.createdAt.slice(0, 10)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${ORDER_STATUS_STYLE[o.status]}`}>
-                        {o.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{o.paymentTerms}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{o.lines.length} SKU{o.lines.length !== 1 ? 's' : ''}</td>
-                    <td className="px-4 py-3 text-right text-xs font-semibold text-gray-800">₹{o.totalAmt.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+        retailerOrders.length === 0 ? (
+          <p className="px-6 py-10 text-sm text-gray-400 text-center">No orders found for this retailer.</p>
+        ) : (
+          <TableWrap>
+            <thead>
+              <tr>
+                <Th>Order No.</Th>
+                <Th>Date</Th>
+                <Th>Status</Th>
+                <Th>Payment</Th>
+                <Th>Items</Th>
+                <Th right>Total</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {retailerOrders.map((o) => (
+                <Tr key={o.id}>
+                  <Td mono bold>
+                    <span className="text-emerald-700">{o.orderNo}</span>
+                  </Td>
+                  <Td muted>{o.createdAt.slice(0, 10)}</Td>
+                  <Td>
+                    <Badge variant={ORDER_STATUS_BADGE[o.status]}>{o.status}</Badge>
+                  </Td>
+                  <Td muted>{o.paymentTerms}</Td>
+                  <Td muted>{o.lines.length} SKU{o.lines.length !== 1 ? 's' : ''}</Td>
+                  <Td right bold>₹{o.totalAmt.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</Td>
+                </Tr>
+              ))}
+            </tbody>
+          </TableWrap>
+        )
       )}
 
       {/* ── KYC Documents ─────────────────────────────────────────────────── */}
       {tab === 'kyc' && (
-        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
-          {kycDocs.map((doc, idx) => (
-            <div key={idx} className="flex items-center gap-4 px-5 py-4">
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${doc.fileName ? 'bg-emerald-100' : 'bg-gray-100'}`}>
-                {doc.fileName
-                  ? <CheckCircle2 size={18} className="text-emerald-600" />
-                  : <AlertTriangle size={18} className="text-gray-400" />
-                }
+        <Card padding="0">
+          <div className="divide-y divide-gray-100">
+            {kycDocs.map((doc, idx) => (
+              <div key={idx} className="flex items-center gap-4 px-5 py-4">
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${doc.fileName ? 'bg-emerald-100' : 'bg-gray-100'}`}>
+                  {doc.fileName
+                    ? <CheckCircle2 size={18} className="text-emerald-600" />
+                    : <AlertTriangle size={18} className="text-gray-400" />
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800">{doc.label}</p>
+                  {doc.fileName
+                    ? <p className="text-xs text-gray-400 font-mono mt-0.5">{doc.fileName} · Uploaded {doc.uploadedAt}</p>
+                    : <p className="text-xs text-amber-600 mt-0.5">Not uploaded</p>
+                  }
+                </div>
+                <label className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors flex-shrink-0">
+                  <Upload size={12} />
+                  {doc.fileName ? 'Replace' : 'Upload'}
+                  <input type="file" className="sr-only" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => uploadKyc(idx, e)} />
+                </label>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800">{doc.label}</p>
-                {doc.fileName
-                  ? <p className="text-xs text-gray-400 font-mono mt-0.5">{doc.fileName} · Uploaded {doc.uploadedAt}</p>
-                  : <p className="text-xs text-amber-600 mt-0.5">Not uploaded</p>
-                }
-              </div>
-              <label className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors flex-shrink-0">
-                <Upload size={12} />
-                {doc.fileName ? 'Replace' : 'Upload'}
-                <input type="file" className="sr-only" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => uploadKyc(idx, e)} />
-              </label>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </Card>
       )}
 
       {/* ── Contact Info ──────────────────────────────────────────────────── */}
       {tab === 'contact' && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6 max-w-lg">
+        <Card padding="24px" className="max-w-lg">
           <div className="space-y-4">
             {[
-              { label: 'Owner Name',    key: 'ownerName' as const, type: 'text' },
-              { label: 'Mobile',        key: 'mobile'    as const, type: 'tel'  },
-              { label: 'Email',         key: 'email'     as const, type: 'email'},
-              { label: 'Address',       key: 'line1'     as const, type: 'text' },
+              { label: 'Owner Name', key: 'ownerName' as const, type: 'text'  },
+              { label: 'Mobile',     key: 'mobile'    as const, type: 'tel'   },
+              { label: 'Email',      key: 'email'     as const, type: 'email' },
+              { label: 'Address',    key: 'line1'     as const, type: 'text'  },
             ].map(({ label, key, type }) => (
               <div key={key}>
                 <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
@@ -400,15 +414,14 @@ export default function RetailerProfile({ retailer, orders, onBack, onUpdate }: 
             ))}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Payment Terms</label>
-              <select
-                value={contactForm.payTerms}
-                onChange={(e) => setContactForm((p) => ({ ...p, payTerms: Number(e.target.value) }))}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              <Select
+                value={String(contactForm.payTerms)}
+                onChange={(v) => setContactForm((p) => ({ ...p, payTerms: Number(v) }))}
               >
                 {[0, 7, 15, 30, 45].map((d) => (
                   <option key={d} value={d}>{d === 0 ? 'Advance' : `${d}-Day Credit`}</option>
                 ))}
-              </select>
+              </Select>
             </div>
             {exec && (
               <div>
@@ -416,21 +429,13 @@ export default function RetailerProfile({ retailer, orders, onBack, onUpdate }: 
                 <p className="text-sm text-gray-800">{exec.name}</p>
               </div>
             )}
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                onClick={handleSaveContact}
-                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors"
-              >
+            <div className="pt-2">
+              <Button variant="primary" onClick={handleSaveContact}>
                 Save Changes
-              </button>
-              {contactSaved && (
-                <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
-                  <CheckCircle2 size={13} /> Saved
-                </span>
-              )}
+              </Button>
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* ── Edit Credit Limit Modal ────────────────────────────────────────── */}
@@ -451,7 +456,9 @@ export default function RetailerProfile({ retailer, orders, onBack, onUpdate }: 
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Reason for Change <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Reason for Change <span className="text-red-500">*</span>
+                </label>
                 <textarea
                   value={creditReason}
                   onChange={(e) => setCreditReason(e.target.value)}
@@ -462,16 +469,16 @@ export default function RetailerProfile({ retailer, orders, onBack, onUpdate }: 
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-5">
-              <button onClick={() => setShowCreditEdit(false)} className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+              <Button variant="secondary" onClick={() => setShowCreditEdit(false)}>
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="primary"
                 onClick={handleSaveCredit}
                 disabled={!newLimit || !creditReason.trim()}
-                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Update Limit
-              </button>
+              </Button>
             </div>
           </div>
         </>
@@ -495,12 +502,12 @@ export default function RetailerProfile({ retailer, orders, onBack, onUpdate }: 
               Blocking this account will prevent any new B2B orders from being placed. Existing active orders will not be affected.
             </p>
             <div className="flex items-center justify-end gap-3">
-              <button onClick={() => setShowBlockModal(false)} className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+              <Button variant="secondary" onClick={() => setShowBlockModal(false)}>
                 Cancel
-              </button>
-              <button onClick={handleBlock} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">
+              </Button>
+              <Button variant="danger" onClick={handleBlock}>
                 Block Account
-              </button>
+              </Button>
             </div>
           </div>
         </>

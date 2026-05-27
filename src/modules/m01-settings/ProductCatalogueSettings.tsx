@@ -3,6 +3,9 @@
 
 import { useState, useRef } from 'react';
 import { Save, CheckCircle2, Upload, X, ToggleLeft, ToggleRight } from 'lucide-react';
+import Button from '../../components/ui/Button';
+import { Card, CardHeader } from '../../components/ui/Card';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -188,43 +191,39 @@ export default function ProductCatalogueSettings() {
     <div className="space-y-6">
 
       {/* ── B2B Tier Discounts ───────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-gray-800">B2B Tier Discounts</h2>
-            <p className="text-[11px] text-gray-400 mt-0.5">Default discount % applied to B2B invoice per retailer tier</p>
-          </div>
-          <button
-            onClick={saveTiers}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all ${
-              tierSaved
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-            }`}
-          >
-            {tierSaved ? <CheckCircle2 size={14} /> : <Save size={14} />}
-            {tierSaved ? 'Saved!' : 'Save'}
-          </button>
-        </div>
+      <Card padding="0">
+        <CardHeader
+          title="B2B Tier Discounts"
+          subtitle="Default discount % applied to B2B invoice per retailer tier"
+          right={
+            <Button
+              variant={tierSaved ? 'secondary' : 'primary'}
+              iconLeft={tierSaved ? CheckCircle2 : Save}
+              onClick={saveTiers}
+            >
+              {tierSaved ? 'Saved!' : 'Save'}
+            </Button>
+          }
+        />
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <TableWrap>
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50 text-xs text-gray-400">
-                <th className="text-left px-5 py-3 font-medium">Tier</th>
-                <th className="text-left px-5 py-3 font-medium">Discount %</th>
-                <th className="text-left px-5 py-3 font-medium">Description</th>
+              <tr>
+                <Th>Tier</Th>
+                <Th>Discount %</Th>
+                <Th>Description</Th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody>
               {tiers.map(row => (
-                <tr key={row.tier} className="hover:bg-gray-50/60 transition-colors">
-                  <td className="px-5 py-3">
+                <Tr key={row.tier}>
+                  <Td>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${TIER_STYLE[row.tier]}`}>
                       {row.tier}
                     </span>
-                  </td>
-                  <td className="px-5 py-3">
+                  </Td>
+                  <Td>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -237,39 +236,35 @@ export default function ProductCatalogueSettings() {
                       />
                       <span className="text-xs text-gray-400">%</span>
                     </div>
-                  </td>
-                  <td className="px-5 py-3 text-xs text-gray-500">
+                  </Td>
+                  <Td muted>
                     {row.tier === 'Standard'  && 'No discount — invoice at list price'}
                     {row.tier === 'Silver'    && 'Small volume discount for Silver retailers'}
                     {row.tier === 'Gold'      && 'Mid-tier discount for high-volume partners'}
                     {row.tier === 'Preferred' && 'Premium discount for top-tier key accounts'}
-                  </td>
-                </tr>
+                  </Td>
+                </Tr>
               ))}
             </tbody>
-          </table>
+          </TableWrap>
         </div>
-      </div>
+      </Card>
 
       {/* ── Category Loyalty Toggles ─────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-gray-800">Loyalty Points — Category Eligibility</h2>
-            <p className="text-[11px] text-gray-400 mt-0.5">Control which product categories earn loyalty points at POS</p>
-          </div>
-          <button
-            onClick={saveCategories}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all ${
-              catSaved
-                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-            }`}
-          >
-            {catSaved ? <CheckCircle2 size={14} /> : <Save size={14} />}
-            {catSaved ? 'Saved!' : 'Save'}
-          </button>
-        </div>
+      <Card padding="0">
+        <CardHeader
+          title="Loyalty Points — Category Eligibility"
+          subtitle="Control which product categories earn loyalty points at POS"
+          right={
+            <Button
+              variant={catSaved ? 'secondary' : 'primary'}
+              iconLeft={catSaved ? CheckCircle2 : Save}
+              onClick={saveCategories}
+            >
+              {catSaved ? 'Saved!' : 'Save'}
+            </Button>
+          }
+        />
 
         <div className="divide-y divide-gray-50">
           {categories.map(cat => (
@@ -294,14 +289,14 @@ export default function ProductCatalogueSettings() {
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* ── Bonus Campaigns ──────────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-800">Bonus Purchase Campaigns</h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">Category-level purchase incentive campaigns — activate or pause</p>
-        </div>
+      <Card padding="0">
+        <CardHeader
+          title="Bonus Purchase Campaigns"
+          subtitle="Category-level purchase incentive campaigns — activate or pause"
+        />
 
         <div className="divide-y divide-gray-50">
           {campaigns.map(c => {
@@ -354,16 +349,18 @@ export default function ProductCatalogueSettings() {
             );
           })}
         </div>
-      </div>
+      </Card>
 
       {/* ── Bulk CSV Import ──────────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-800">Bulk Import Products</h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">
-            CSV columns (in order): <span className="font-mono">SKU, Name, Category, UnitPrice, UnitsPerPkg, HSN</span>
-          </p>
-        </div>
+      <Card padding="0">
+        <CardHeader
+          title="Bulk Import Products"
+          subtitle={
+            <>
+              CSV columns (in order): <span className="font-mono">SKU, Name, Category, UnitPrice, UnitsPerPkg, HSN</span>
+            </>
+          }
+        />
 
         <div className="px-5 py-5 space-y-4">
           {csvImported && (
@@ -413,44 +410,38 @@ export default function ProductCatalogueSettings() {
                 </button>
               </div>
 
-              <div className="overflow-x-auto rounded-xl border border-gray-200">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100 text-gray-400">
-                      <th className="text-left px-3 py-2 font-medium">SKU</th>
-                      <th className="text-left px-3 py-2 font-medium">Name</th>
-                      <th className="text-left px-3 py-2 font-medium">Category</th>
-                      <th className="text-left px-3 py-2 font-medium">Unit Price</th>
-                      <th className="text-left px-3 py-2 font-medium">Units/Pkg</th>
-                      <th className="text-left px-3 py-2 font-medium">HSN</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {csvRows.map((row, i) => (
-                      <tr key={i} className="hover:bg-gray-50/60">
-                        <td className="px-3 py-2 font-mono text-gray-600">{row.sku}</td>
-                        <td className="px-3 py-2 text-gray-800">{row.name}</td>
-                        <td className="px-3 py-2 text-gray-500">{row.category}</td>
-                        <td className="px-3 py-2 text-gray-700">₹{row.unitPrice}</td>
-                        <td className="px-3 py-2 text-gray-500">{row.unitsPerPkg}</td>
-                        <td className="px-3 py-2 font-mono text-gray-500">{row.hsn}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <TableWrap>
+                <thead>
+                  <tr>
+                    <Th>SKU</Th>
+                    <Th>Name</Th>
+                    <Th>Category</Th>
+                    <Th>Unit Price</Th>
+                    <Th>Units/Pkg</Th>
+                    <Th>HSN</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {csvRows.map((row, i) => (
+                    <Tr key={i}>
+                      <Td mono>{row.sku}</Td>
+                      <Td>{row.name}</Td>
+                      <Td muted>{row.category}</Td>
+                      <Td>₹{row.unitPrice}</Td>
+                      <Td muted>{row.unitsPerPkg}</Td>
+                      <Td mono muted>{row.hsn}</Td>
+                    </Tr>
+                  ))}
+                </tbody>
+              </TableWrap>
 
-              <button
-                onClick={handleImportConfirm}
-                className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors"
-              >
-                <Upload size={14} />
+              <Button variant="primary" iconLeft={Upload} onClick={handleImportConfirm}>
                 Confirm Import
-              </button>
+              </Button>
             </div>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

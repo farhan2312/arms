@@ -1,7 +1,11 @@
 import { useState } from 'react';
-import { Search, Plus, Pencil, ToggleLeft, CheckCircle2 } from 'lucide-react';
+import { Plus, Pencil, ToggleLeft } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
+import Button from '../../components/ui/Button';
+import { SearchInput } from '../../components/ui/Input';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
 import Badge from '../../components/ui/Badge';
+import { useToast } from '../../hooks/useToast';
 import { mockProducts } from '../../data/mockProducts';
 import { mockProductStock } from '../../data/mockBatches';
 import type { Product } from '../../types/entities';
@@ -15,7 +19,7 @@ export default function ProductsPage() {
   const [category, setCategory]       = useState('All');
   const [showForm, setShowForm]       = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
-  const [toast, setToast]             = useState<string | null>(null);
+  const toast = useToast();
 
   const filtered = products.filter((p) => {
     const matchSearch =
@@ -39,10 +43,10 @@ export default function ProductsPage() {
   function handleSave(saved: Product) {
     if (editingProduct) {
       setProducts(prev => prev.map(p => p.id === saved.id ? saved : p));
-      showToast('Product updated successfully');
+      toast.success('Product updated successfully');
     } else {
       setProducts(prev => [saved, ...prev]);
-      showToast('Product added successfully');
+      toast.success('Product added successfully');
     }
     setShowForm(false);
     setEditingProduct(undefined);
@@ -59,11 +63,6 @@ export default function ProductsPage() {
     );
   }
 
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  }
-
   const categoryBadge = (cat: string): 'green' | 'blue' | 'orange' | 'purple' | 'gray' => {
     const map: Record<string, 'green' | 'blue' | 'orange' | 'purple' | 'gray'> = {
       Fertiliser: 'green', Pesticide: 'orange', Seed: 'blue', Micronutrient: 'purple',
@@ -77,25 +76,19 @@ export default function ProductsPage() {
         title="Product Catalogue"
         subtitle="Manage agri-input SKUs, pricing and availability"
         actions={
-          <button
-            onClick={openAdd}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors"
-          >
-            <Plus size={15} />
+          <Button variant="primary" iconLeft={Plus} onClick={openAdd}>
             Add Product
-          </button>
+          </Button>
         }
       />
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 mb-5">
-        <div className="relative flex-1 min-w-60">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
+        <div className="flex-1 min-w-60">
+          <SearchInput
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={setSearch}
             placeholder="Search by product name, SKU or brand..."
-            className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
           />
         </div>
         <div className="flex gap-1.5 flex-wrap">
@@ -128,92 +121,90 @@ export default function ProductsPage() {
         <span>{filtered.filter((p) => p.isRegulated).length} regulated</span>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Product</th>
-              <th className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Category</th>
-              <th className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Brand</th>
-              <th className="text-right px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">MRP</th>
-              <th className="text-right px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">B2C Price</th>
-              <th className="text-right px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">GST</th>
-              <th className="text-right px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Stock</th>
-              <th className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Status</th>
-              <th className="px-5 py-3" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {filtered.map((p) => {
-              const stock = mockProductStock[p.id] ?? 0;
-              const isLow = stock <= p.reorderLevel;
-              return (
-                <tr key={p.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-5 py-3.5">
-                    <p className="font-medium text-gray-800 text-xs">
-                      {p.name}
-                      {p.isSubsidised && (
-                        <span className="ml-1.5 text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-full font-medium border border-amber-200">Subsidised</span>
-                      )}
-                      {p.isRegulated && (
-                        <span className="ml-1.5 text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded-full font-medium border border-red-200">CIB</span>
-                      )}
-                    </p>
-                    <p className="text-gray-400 text-[11px] font-mono mt-0.5">{p.sku} · {p.packSize}</p>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <Badge label={p.category} variant={categoryBadge(p.category)} />
-                  </td>
-                  <td className="px-5 py-3.5 text-xs text-gray-600">{p.brand}</td>
-                  <td className="px-5 py-3.5 text-right text-xs text-gray-500">₹{p.mrp.toLocaleString('en-IN')}</td>
-                  <td className="px-5 py-3.5 text-right text-xs font-semibold text-gray-800">₹{p.b2cPrice.toLocaleString('en-IN')}</td>
-                  <td className="px-5 py-3.5 text-right text-xs text-gray-500">{p.taxSlabPct}%</td>
-                  <td className="px-5 py-3.5 text-right">
-                    <span className={`text-xs font-semibold ${isLow ? 'text-red-600' : 'text-gray-700'}`}>
-                      {stock}
-                    </span>
-                    <span className="text-[11px] text-gray-400 ml-0.5">{p.unit}s</span>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    {isLow ? (
-                      <Badge label="Low Stock" variant="red" />
-                    ) : p.isActive ? (
-                      <Badge label="Active" variant="green" />
-                    ) : (
-                      <Badge label="Inactive" variant="gray" />
+      <TableWrap>
+        <thead>
+          <tr>
+            <Th>Product</Th>
+            <Th>Category</Th>
+            <Th>Brand</Th>
+            <Th right>MRP</Th>
+            <Th right>B2C Price</Th>
+            <Th right>GST</Th>
+            <Th right>Stock</Th>
+            <Th>Status</Th>
+            <Th />
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.map((p) => {
+            const stock = mockProductStock[p.id] ?? 0;
+            const isLow = stock <= p.reorderLevel;
+            return (
+              <Tr key={p.id}>
+                <Td>
+                  <p className="font-medium text-gray-800 text-xs">
+                    {p.name}
+                    {p.isSubsidised && (
+                      <span className="ml-1.5 text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-full font-medium border border-amber-200">Subsidised</span>
                     )}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-2 justify-end">
-                      <button
-                        onClick={() => openEdit(p)}
-                        className="text-gray-400 hover:text-emerald-600 transition-colors"
-                        title="Edit product"
-                      >
-                        <Pencil size={13} />
-                      </button>
-                      <button
-                        onClick={() => toggleActive(p)}
-                        className={`transition-colors ${p.isActive ? 'text-gray-400 hover:text-red-500' : 'text-gray-300 hover:text-emerald-600'}`}
-                        title={p.isActive ? 'Deactivate' : 'Activate'}
-                      >
-                        <ToggleLeft size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={9} className="px-5 py-10 text-center text-sm text-gray-400">
-                  No products match the current filters.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                    {p.isRegulated && (
+                      <span className="ml-1.5 text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded-full font-medium border border-red-200">CIB</span>
+                    )}
+                  </p>
+                  <p className="text-gray-400 text-[11px] font-mono mt-0.5">{p.sku} · {p.packSize}</p>
+                </Td>
+                <Td>
+                  <Badge label={p.category} variant={categoryBadge(p.category)} />
+                </Td>
+                <Td muted>{p.brand}</Td>
+                <Td right muted>₹{p.mrp.toLocaleString('en-IN')}</Td>
+                <Td right bold>₹{p.b2cPrice.toLocaleString('en-IN')}</Td>
+                <Td right muted>{p.taxSlabPct}%</Td>
+                <Td right>
+                  <span className={`text-xs font-semibold ${isLow ? 'text-red-600' : 'text-gray-700'}`}>
+                    {stock}
+                  </span>
+                  <span className="text-[11px] text-gray-400 ml-0.5">{p.unit}s</span>
+                </Td>
+                <Td>
+                  {isLow ? (
+                    <Badge label="Low Stock" variant="red" />
+                  ) : p.isActive ? (
+                    <Badge label="Active" variant="green" />
+                  ) : (
+                    <Badge label="Inactive" variant="gray" />
+                  )}
+                </Td>
+                <Td>
+                  <div className="flex items-center gap-2 justify-end">
+                    <button
+                      onClick={() => openEdit(p)}
+                      className="text-gray-400 hover:text-emerald-600 transition-colors"
+                      title="Edit product"
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      onClick={() => toggleActive(p)}
+                      className={`transition-colors ${p.isActive ? 'text-gray-400 hover:text-red-500' : 'text-gray-300 hover:text-emerald-600'}`}
+                      title={p.isActive ? 'Deactivate' : 'Activate'}
+                    >
+                      <ToggleLeft size={14} />
+                    </button>
+                  </div>
+                </Td>
+              </Tr>
+            );
+          })}
+          {filtered.length === 0 && (
+            <Tr>
+              <td colSpan={9} className="px-5 py-10 text-center text-sm text-gray-400">
+                No products match the current filters.
+              </td>
+            </Tr>
+          )}
+        </tbody>
+      </TableWrap>
 
       {/* Slide-over form */}
       {showForm && (
@@ -222,14 +213,6 @@ export default function ProductsPage() {
           onSave={handleSave}
           onClose={handleClose}
         />
-      )}
-
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 flex items-center gap-2.5 bg-gray-900 text-white text-sm font-medium px-5 py-3 rounded-xl shadow-2xl z-[100]">
-          <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0" />
-          {toast}
-        </div>
       )}
     </div>
   );

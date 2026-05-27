@@ -2,7 +2,8 @@
 // Defines and exports shared types used by DailyBookkeepingForm and BookkeepingHistory
 
 import { useState } from 'react';
-import { FileText, Clock } from 'lucide-react';
+import PageHeader from '../../components/ui/PageHeader';
+import Tabs from '../../components/ui/Tabs';
 import DailyBookkeepingForm from './DailyBookkeepingForm';
 import BookkeepingHistory from './BookkeepingHistory';
 
@@ -76,9 +77,9 @@ const SEED_ENTRIES: BookkeepingEntry[] = [
 
 type BKTab = 'form' | 'history';
 
-const TABS: { key: BKTab; label: string; icon: React.ElementType }[] = [
-  { key: 'form',    label: 'Daily Entry',  icon: FileText },
-  { key: 'history', label: 'History',      icon: Clock },
+const TABS = [
+  { id: 'form',    label: 'Daily Entry' },
+  { id: 'history', label: 'History' },
 ];
 
 // ── Page ───────────────────────────────────────────────────────────────────────
@@ -93,35 +94,25 @@ export default function BookkeepingPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <div className="mb-5">
-        <h1 className="text-xl font-bold text-gray-900">Daily Bookkeeping</h1>
-        <p className="text-sm text-gray-500 mt-0.5">End-of-day cash reconciliation and sales sign-off</p>
-      </div>
+      <PageHeader
+        title="Daily Bookkeeping"
+        subtitle="End-of-day cash reconciliation and sales sign-off"
+      />
 
-      {/* Tab bar */}
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
-        {TABS.map(({ key, label, icon: Icon }) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              tab === key
-                ? 'border-emerald-600 text-emerald-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <Icon size={14} />
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        tabs={TABS}
+        activeTab={tab}
+        onTabChange={(id) => setTab(id as BKTab)}
+      />
 
-      {tab === 'form' && (
-        <DailyBookkeepingForm entries={entries} onSubmit={handleSubmit} />
-      )}
-      {tab === 'history' && (
-        <BookkeepingHistory entries={entries} />
-      )}
+      <div className="mt-6">
+        {tab === 'form' && (
+          <DailyBookkeepingForm entries={entries} onSubmit={handleSubmit} />
+        )}
+        {tab === 'history' && (
+          <BookkeepingHistory entries={entries} />
+        )}
+      </div>
     </div>
   );
 }

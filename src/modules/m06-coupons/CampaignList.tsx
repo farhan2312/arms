@@ -1,9 +1,14 @@
 // CampaignList — table of all coupon campaigns with inline per-coupon detail
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Plus, CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, CheckCircle2, Clock, XCircle, Tag } from 'lucide-react';
 import type { CouponCampaign, IssuedCoupon } from '../../data/mockCouponCampaigns';
 import type { LoyaltyTier } from '../../types/loyalty';
+import Button from '../../components/ui/Button';
+import Badge from '../../components/ui/Badge';
+import type { BadgeVariant } from '../../components/ui/Badge';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
+import EmptyState from '../../components/ui/EmptyState';
 
 const TODAY = '2026-05-27';
 
@@ -34,36 +39,34 @@ function formatDiscount(c: CouponCampaign): string {
   return 'Free Product';
 }
 
-const STATUS_STYLE: Record<CampaignStatus, string> = {
-  Active:   'bg-emerald-100 text-emerald-700',
-  Upcoming: 'bg-blue-100 text-blue-700',
-  Expired:  'bg-gray-100 text-gray-500',
+const STATUS_VARIANT: Record<CampaignStatus, BadgeVariant> = {
+  Active:   'green',
+  Upcoming: 'blue',
+  Expired:  'gray',
 };
 
-const TIER_STYLE: Record<LoyaltyTier, string> = {
-  Green:    'bg-green-100 text-green-700',
-  Silver:   'bg-gray-100 text-gray-600',
-  Gold:     'bg-yellow-100 text-yellow-700',
-  Platinum: 'bg-purple-100 text-purple-700',
+const TIER_VARIANT: Record<LoyaltyTier, BadgeVariant> = {
+  Green:    'green',
+  Silver:   'gray',
+  Gold:     'amber',
+  Platinum: 'purple',
 };
 
 function StatusBadge({ status }: { status: CampaignStatus }) {
   return (
-    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${STATUS_STYLE[status]}`}>
-      {status === 'Active'   && <CheckCircle2 size={10} />}
-      {status === 'Upcoming' && <Clock size={10} />}
-      {status === 'Expired'  && <XCircle size={10} />}
-      {status}
-    </span>
+    <Badge variant={STATUS_VARIANT[status]}>
+      <span className="inline-flex items-center gap-1">
+        {status === 'Active'   && <CheckCircle2 size={10} />}
+        {status === 'Upcoming' && <Clock size={10} />}
+        {status === 'Expired'  && <XCircle size={10} />}
+        {status}
+      </span>
+    </Badge>
   );
 }
 
 function TierBadge({ tier }: { tier: LoyaltyTier }) {
-  return (
-    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${TIER_STYLE[tier]}`}>
-      {tier}
-    </span>
-  );
+  return <Badge variant={TIER_VARIANT[tier]}>{tier}</Badge>;
 }
 
 interface Props {
@@ -92,22 +95,19 @@ export default function CampaignList({ campaigns, issuedCoupons, onCreateCampaig
             {campaigns.length} campaign{campaigns.length !== 1 ? 's' : ''} on record
           </p>
         </div>
-        <button
-          onClick={onCreateCampaign}
-          className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors"
-        >
-          <Plus size={14} /> Create Campaign
-        </button>
+        <Button variant="primary" iconLeft={Plus} onClick={onCreateCampaign}>
+          Create Campaign
+        </Button>
       </div>
 
-      <div className="rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
+      {campaigns.length === 0 ? (
+        <EmptyState icon={Tag} title="No campaigns yet." subtitle="Create one to get started." />
+      ) : (
+        <TableWrap>
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
+            <tr>
               {['Campaign', 'Valid Dates', 'Discount', 'Min. Purchase', 'Coverage', 'Issued', 'Redeemed', 'Rate', 'Status', ''].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
-                  {h}
-                </th>
+                <Th key={h}>{h}</Th>
               ))}
             </tr>
           </thead>
@@ -122,26 +122,21 @@ export default function CampaignList({ campaigns, issuedCoupons, onCreateCampaig
 
               return (
                 <>
-                  <tr
+                  <Tr
                     key={campaign.id}
                     onClick={() => toggle(campaign.id)}
-                    className="border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
                   >
-                    <td className="px-4 py-3 max-w-[200px]">
-                      <p className="text-xs font-semibold text-gray-800 truncate">{campaign.name}</p>
-                      <p className="text-[11px] text-gray-400 mt-0.5 truncate">{campaign.description}</p>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                    <Td>
+                      <p className="text-xs font-semibold text-gray-800 truncate max-w-[200px]">{campaign.name}</p>
+                      <p className="text-[11px] text-gray-400 mt-0.5 truncate max-w-[200px]">{campaign.description}</p>
+                    </Td>
+                    <Td muted>
                       {fmtDate(campaign.startDate)}<br />
                       <span className="text-gray-400">to</span> {fmtDate(campaign.endDate)}
-                    </td>
-                    <td className="px-4 py-3 text-xs font-semibold text-gray-800 whitespace-nowrap">
-                      {formatDiscount(campaign)}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">
-                      ₹{fmtAmt(campaign.minPurchaseValue)}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                    </Td>
+                    <Td bold>{formatDiscount(campaign)}</Td>
+                    <Td muted>₹{fmtAmt(campaign.minPurchaseValue)}</Td>
+                    <Td muted>
                       {campaign.applicableProductIds.length > 0
                         ? `${campaign.applicableProductIds.length} products`
                         : 'All products'}
@@ -150,10 +145,10 @@ export default function CampaignList({ campaigns, issuedCoupons, onCreateCampaig
                           {campaign.applicableStoreIds.length} stores
                         </span>
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-xs font-mono font-semibold text-gray-800">{issued}</td>
-                    <td className="px-4 py-3 text-xs font-mono font-semibold text-gray-800">{redeemed}</td>
-                    <td className="px-4 py-3 text-xs whitespace-nowrap">
+                    </Td>
+                    <Td mono bold>{issued}</Td>
+                    <Td mono bold>{redeemed}</Td>
+                    <Td>
                       <div className="flex items-center gap-2">
                         <div className="w-14 h-1.5 rounded-full bg-gray-200 overflow-hidden">
                           <div
@@ -161,16 +156,16 @@ export default function CampaignList({ campaigns, issuedCoupons, onCreateCampaig
                             style={{ width: `${rate}%` }}
                           />
                         </div>
-                        <span className="font-semibold text-gray-700">{rate}%</span>
+                        <span className="font-semibold text-gray-700 text-xs">{rate}%</span>
                       </div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    </Td>
+                    <Td>
                       <StatusBadge status={status} />
-                    </td>
-                    <td className="px-4 py-3 text-gray-400">
+                    </Td>
+                    <Td muted>
                       {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                    </td>
-                  </tr>
+                    </Td>
+                  </Tr>
 
                   {isExpanded && (
                     <tr key={`${campaign.id}-detail`} className="bg-gray-50 border-b border-gray-200">
@@ -182,17 +177,9 @@ export default function CampaignList({ campaigns, issuedCoupons, onCreateCampaig
                 </>
               );
             })}
-
-            {campaigns.length === 0 && (
-              <tr>
-                <td colSpan={10} className="px-4 py-12 text-center text-sm text-gray-400">
-                  No campaigns yet. Create one to get started.
-                </td>
-              </tr>
-            )}
           </tbody>
-        </table>
-      </div>
+        </TableWrap>
+      )}
     </div>
   );
 }
@@ -238,63 +225,57 @@ function CampaignDetail({ campaign, coupons }: { campaign: CouponCampaign; coupo
       {coupons.length === 0 ? (
         <p className="text-xs text-gray-400 py-4 text-center">No coupons issued for this campaign yet.</p>
       ) : (
-        <table className="w-full text-xs">
+        <TableWrap>
           <thead>
-            <tr className="border-b border-gray-200 text-[10px] text-gray-400 uppercase tracking-wide">
-              <th className="pb-2 text-left font-semibold">Code</th>
-              <th className="pb-2 text-left font-semibold">Farmer</th>
-              <th className="pb-2 text-left font-semibold">Tier</th>
-              <th className="pb-2 text-left font-semibold">Issued</th>
-              <th className="pb-2 text-left font-semibold">Redeemed At</th>
-              <th className="pb-2 text-left font-semibold">Store</th>
-              <th className="pb-2 text-right font-semibold">Invoice</th>
-              <th className="pb-2 text-right font-semibold">Discount</th>
-              <th className="pb-2 text-center font-semibold">Status</th>
+            <tr>
+              <Th>Code</Th>
+              <Th>Farmer</Th>
+              <Th>Tier</Th>
+              <Th>Issued</Th>
+              <Th>Redeemed At</Th>
+              <Th>Store</Th>
+              <Th right>Invoice</Th>
+              <Th right>Discount</Th>
+              <Th>Status</Th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody>
             {coupons.map(coupon => (
-              <tr key={coupon.id} className="bg-white">
-                <td className="py-2 font-mono text-gray-700 whitespace-nowrap">{coupon.code}</td>
-                <td className="py-2 text-gray-700">
-                  <p className="font-medium">{coupon.farmerName}</p>
+              <Tr key={coupon.id}>
+                <Td mono>{coupon.code}</Td>
+                <Td>
+                  <p className="font-medium text-gray-700">{coupon.farmerName}</p>
                   <p className="text-[10px] text-gray-400">{coupon.farmerMobile}</p>
-                </td>
-                <td className="py-2"><TierBadge tier={coupon.farmerTier} /></td>
-                <td className="py-2 text-gray-500 whitespace-nowrap">{fmtDT(coupon.issuedAt)}</td>
-                <td className="py-2 text-gray-500 whitespace-nowrap">
+                </Td>
+                <Td><TierBadge tier={coupon.farmerTier} /></Td>
+                <Td muted>{fmtDT(coupon.issuedAt)}</Td>
+                <Td muted>
                   {coupon.redeemedAt ? fmtDT(coupon.redeemedAt) : <span className="text-gray-300">—</span>}
-                </td>
-                <td className="py-2 text-gray-500 max-w-[140px] truncate">
+                </Td>
+                <Td muted>
                   {coupon.storeName
                     ? coupon.storeName.replace('Bharat Agri Store – ', '')
                     : <span className="text-gray-300">—</span>}
-                </td>
-                <td className="py-2 text-right font-mono text-gray-700">
+                </Td>
+                <Td right mono>
                   {coupon.invoiceValue != null
                     ? `₹${fmtAmt(coupon.invoiceValue)}`
                     : <span className="text-gray-300">—</span>}
-                </td>
-                <td className="py-2 text-right font-mono font-semibold text-emerald-700">
+                </Td>
+                <Td right mono bold>
                   {coupon.discountApplied != null
-                    ? `₹${fmtAmt(coupon.discountApplied)}`
+                    ? <span className="text-emerald-700">₹{fmtAmt(coupon.discountApplied)}</span>
                     : <span className="text-gray-300">—</span>}
-                </td>
-                <td className="py-2 text-center">
-                  {coupon.redeemedAt ? (
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                      Redeemed
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                      Pending
-                    </span>
-                  )}
-                </td>
-              </tr>
+                </Td>
+                <Td>
+                  <Badge variant={coupon.redeemedAt ? 'green' : 'amber'}>
+                    {coupon.redeemedAt ? 'Redeemed' : 'Pending'}
+                  </Badge>
+                </Td>
+              </Tr>
             ))}
           </tbody>
-        </table>
+        </TableWrap>
       )}
     </div>
   );

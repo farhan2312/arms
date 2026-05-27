@@ -1,0 +1,57 @@
+/* ARMS Design Tokens — single source of truth for all visual values */
+
+:root {
+  /* Brand */
+  --green-500: #16a34a;
+  --green-600: #15803d;
+  --green-50:  #f0fdf4;
+  --green-100: #dcfce7;
+  --green-900: #14532d;
+
+  /* Page & surfaces */
+  --bg-page:    #f8fafc;
+  --bg-card:    #ffffff;
+  --bg-sidebar: #111827;
+
+  /* Sidebar internals */
+  --sidebar-text:        #9ca3af;
+  --sidebar-text-active: #ffffff;
+  --sidebar-hover:       rgba(255,255,255,0.06);
+  --sidebar-active:      #16a34a;
+  --sidebar-group:       #4b5563;
+  --sidebar-border:      rgba(255,255,255,0.08);
+
+  /* Text */
+  --text-primary:   #0f172a;
+  --text-secondary: #64748b;
+  --text-muted:     #94a3b8;
+
+  /* Borders */
+  --border:        #e2e8f0;
+  --border-strong: #cbd5e1;
+
+  /* Status */
+  --status-green-bg:    #dcfce7; --status-green-text:    #14532d;
+  --status-blue-bg:     #dbeafe; --status-blue-text:     #1e3a8a;
+  --status-amber-bg:    #fef3c7; --status-amber-text:    #78350f;
+  --status-red-bg:      #fee2e2; --status-red-text:      #7f1d1d;
+  --status-purple-bg:   #ede9fe; --status-purple-text:   #3b0764;
+  --status-gray-bg:     #f1f5f9; --status-gray-text:     #334155;
+
+  /* Loyalty tiers */
+  --tier-platinum-bg:   #ede9fe; --tier-platinum-text:   #3b0764;
+  --tier-gold-bg:       #fef3c7; --tier-gold-text:       #78350f;
+  --tier-silver-bg:     #f1f5f9; --tier-silver-text:     #334155;
+  --tier-green-bg:      #dcfce7; --tier-green-text:      #14532d;
+
+  /* Shape */
+  --radius-sm:   6px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-full: 9999px;
+
+  /* Elevation */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg:   0 4px 16px rgba(0,0,0,0.10);
+}

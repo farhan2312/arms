@@ -3,9 +3,12 @@
 
 import { useState, useMemo } from 'react';
 import {
-  Users, MapPin, ClipboardList, CheckCircle2,
-  Calendar, ChevronDown, Search,
+  Users, MapPin, ClipboardList,
+  Calendar, ChevronDown,
 } from 'lucide-react';
+import Button from '../../components/ui/Button';
+import { SearchInput } from '../../components/ui/Input';
+import { useToast } from '../../hooks/useToast';
 import { MOCK_USERS } from '../../data/mockUsers';
 import { useAuth } from '../../context/AuthContext';
 
@@ -94,6 +97,7 @@ const SEED_MEETINGS: Meeting[] = [
 
 export default function MeetingLog() {
   const { currentUser } = useAuth();
+  const toast = useToast();
 
   // Form state
   const [date,        setDate]        = useState('2026-05-26');
@@ -103,7 +107,6 @@ export default function MeetingLog() {
   const [attendees,   setAttendees]   = useState<number | ''>('');
   const [notes,       setNotes]       = useState('');
   const [errors,      setErrors]      = useState<string[]>([]);
-  const [toast,       setToast]       = useState<string | null>(null);
 
   const [meetings, setMeetings] = useState<Meeting[]>(SEED_MEETINGS);
 
@@ -157,8 +160,7 @@ export default function MeetingLog() {
     console.log('// POST /api/field-force/meetings', meeting);
 
     setMeetings(prev => [meeting, ...prev]);
-    setToast(`Meeting logged — ${type} at ${location} (${attendees} attendees).`);
-    setTimeout(() => setToast(null), 5000);
+    toast.success(`Meeting logged — ${type} at ${location} (${attendees} attendees).`);
 
     // Reset
     setLocation(''); setAttendees(''); setNotes('');
@@ -195,12 +197,6 @@ export default function MeetingLog() {
           <ClipboardList size={14} className="text-emerald-600" /> Log a Meeting
         </h3>
 
-        {toast && (
-          <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-300 rounded-xl px-4 py-3">
-            <CheckCircle2 size={15} className="text-emerald-600 flex-shrink-0" />
-            <p className="text-sm text-emerald-800 font-medium">{toast}</p>
-          </div>
-        )}
         {errors.length > 0 && (
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 space-y-1">
             {errors.map((e, i) => <p key={i} className="text-xs text-red-700">• {e}</p>)}
@@ -271,10 +267,9 @@ export default function MeetingLog() {
         </div>
 
         <div className="flex justify-end">
-          <button onClick={handleSubmit}
-            className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm">
+          <Button variant="primary" onClick={handleSubmit}>
             Save Meeting
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -294,12 +289,11 @@ export default function MeetingLog() {
           </div>
 
           {/* Search */}
-          <div className="relative">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search location or outcome notes…"
-              className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white" />
-          </div>
+          <SearchInput
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search location or outcome notes…"
+          />
 
           {showFilters && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 pt-1">

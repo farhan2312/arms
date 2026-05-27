@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { CheckCircle2 } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
+import { useToast } from '../../hooks/useToast';
 import { mockCreditNotes } from '../../data/mockCreditNotes';
 import { mockRetailers } from '../../data/mockRetailers';
 import type { CreditNote } from './types';
@@ -31,22 +31,17 @@ function nextCnNo(type: CreditNote['type'], date: string) {
 
 export default function CreditNotes() {
   const { currentUser } = useAuth();
+  const toast = useToast();
 
   const [notes,     setNotes]     = useState<CreditNote[]>(mockCreditNotes);
   const [retailers, setRetailers] = useState<RetailerAccount[]>(mockRetailers);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showForm,   setShowForm]   = useState(false);
   const [editingNote, setEditingNote] = useState<CreditNote | undefined>();
-  const [toast, setToast] = useState<string | null>(null);
 
   const selectedNote = selectedId ? notes.find((n) => n.id === selectedId) : null;
 
   // ── Handlers ────────────────────────────────────────────────────────────────
-
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 4000);
-  }
 
   function openCreate() {
     setEditingNote(undefined);
@@ -74,7 +69,7 @@ export default function CreditNotes() {
             : n,
         ),
       );
-      showToast(
+      toast.success(
         submitForApproval
           ? `${payload.cnNo} submitted for approval`
           : `${payload.cnNo} saved as draft`,
@@ -92,7 +87,7 @@ export default function CreditNotes() {
         updatedAt: now,
       };
       setNotes((prev) => [newNote, ...prev]);
-      showToast(
+      toast.success(
         submitForApproval
           ? `${cnNo} submitted for approval`
           : `${cnNo} saved as draft`,
@@ -134,7 +129,7 @@ export default function CreditNotes() {
       console.log('// PATCH /api/batches/', cn.linkedBatchId, '{ purchasePricePerUnit: recalculated }');
     }
 
-    showToast(`${cn.cnNo} approved and posted`);
+    toast.success(`${cn.cnNo} approved and posted`);
     setSelectedId(null);  // return to list
   }
 
@@ -152,7 +147,7 @@ export default function CreditNotes() {
     );
 
     console.log('// POST /api/credit-notes/', cnId, '/reject { reason }');
-    showToast(`${cn.cnNo} rejected`);
+    toast.success(`${cn.cnNo} rejected`);
     setSelectedId(null);  // return to list
   }
 
@@ -190,14 +185,6 @@ export default function CreditNotes() {
           onSave={handleSave}
           onClose={() => { setShowForm(false); setEditingNote(undefined); }}
         />
-      )}
-
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 flex items-center gap-2.5 bg-gray-900 text-white text-sm font-medium px-5 py-3 rounded-xl shadow-2xl z-[100] max-w-sm">
-          <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0" />
-          {toast}
-        </div>
       )}
     </div>
   );

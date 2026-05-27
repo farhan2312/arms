@@ -4,6 +4,12 @@ import { useState, useMemo } from 'react';
 import { Download, Ticket, CheckCircle2, Clock, TrendingUp } from 'lucide-react';
 import type { CouponCampaign, IssuedCoupon } from '../../data/mockCouponCampaigns';
 import type { LoyaltyTier } from '../../types/loyalty';
+import Button from '../../components/ui/Button';
+import { Select } from '../../components/ui/Input';
+import { Card } from '../../components/ui/Card';
+import Badge, { getTierVariant, getStatusVariant } from '../../components/ui/Badge';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
+import EmptyState from '../../components/ui/EmptyState';
 
 const ALL_TIERS: LoyaltyTier[] = ['Green', 'Silver', 'Gold', 'Platinum'];
 
@@ -22,13 +28,6 @@ function fmtDT(iso: string) {
     day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 }
-
-const TIER_STYLE: Record<LoyaltyTier, string> = {
-  Green:    'bg-green-100 text-green-700',
-  Silver:   'bg-gray-100 text-gray-600',
-  Gold:     'bg-yellow-100 text-yellow-700',
-  Platinum: 'bg-purple-100 text-purple-700',
-};
 
 interface Props {
   campaigns: CouponCampaign[];
@@ -129,43 +128,40 @@ export default function CouponRedemptionReport({ campaigns, issuedCoupons }: Pro
     },
   ];
 
-  const selectCls = 'border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white';
+  const dateCls = 'border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white';
 
   return (
     <div className="space-y-6">
       {/* ── Filters ──────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+      <Card>
         <p className="text-xs font-semibold text-gray-700 mb-3">Filters</p>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* Campaign */}
-          <select
+          <Select
             value={filterCampaignId}
-            onChange={e => setFilterCampaignId(e.target.value)}
-            className={selectCls}
+            onChange={setFilterCampaignId}
           >
             <option value="">All campaigns</option>
             {campaigns.map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
-          </select>
+          </Select>
 
           {/* Tier */}
-          <select
+          <Select
             value={filterTier}
-            onChange={e => setFilterTier(e.target.value as LoyaltyTier | '')}
-            className={selectCls}
+            onChange={v => setFilterTier(v as LoyaltyTier | '')}
           >
             <option value="">All tiers</option>
             {ALL_TIERS.map(t => (
               <option key={t} value={t}>{t}</option>
             ))}
-          </select>
+          </Select>
 
           {/* Store */}
-          <select
+          <Select
             value={filterStore}
-            onChange={e => setFilterStore(e.target.value)}
-            className={selectCls}
+            onChange={setFilterStore}
           >
             <option value="">All stores</option>
             {allStores.map(s => (
@@ -173,14 +169,14 @@ export default function CouponRedemptionReport({ campaigns, issuedCoupons }: Pro
                 {s.name.replace('Bharat Agri Store – ', '')}
               </option>
             ))}
-          </select>
+          </Select>
 
           {/* Date from */}
           <input
             type="date"
             value={filterFrom}
             onChange={e => setFilterFrom(e.target.value)}
-            className={selectCls}
+            className={dateCls}
             title="Issued from"
           />
 
@@ -189,7 +185,7 @@ export default function CouponRedemptionReport({ campaigns, issuedCoupons }: Pro
             type="date"
             value={filterTo}
             onChange={e => setFilterTo(e.target.value)}
-            className={selectCls}
+            className={dateCls}
             title="Issued to"
           />
         </div>
@@ -202,7 +198,7 @@ export default function CouponRedemptionReport({ campaigns, issuedCoupons }: Pro
             Clear all filters
           </button>
         )}
-      </div>
+      </Card>
 
       {/* ── KPI Cards ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -228,92 +224,81 @@ export default function CouponRedemptionReport({ campaigns, issuedCoupons }: Pro
           <p className="text-xs text-emerald-600 font-semibold">Total Discount Given (redeemed coupons)</p>
           <p className="text-2xl font-bold text-emerald-800 mt-0.5 font-mono">₹{fmtAmt(totalDiscount)}</p>
         </div>
-        <button
-          onClick={exportCSV}
-          className="flex items-center gap-2 px-3 py-2 bg-white border border-emerald-300 text-emerald-700 text-xs font-semibold rounded-lg hover:bg-emerald-100 transition-colors"
-        >
-          <Download size={13} /> Export CSV
-        </button>
+        <Button variant="secondary" iconLeft={Download} onClick={exportCSV} size="sm">
+          Export CSV
+        </Button>
       </div>
 
       {/* ── Table ─────────────────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              {['Code', 'Campaign', 'Farmer', 'Tier', 'Issued', 'Redeemed At', 'Store', 'Invoice', 'Discount', 'Status'].map(h => (
-                <th
-                  key={h}
-                  className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(coupon => (
-              <tr key={coupon.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 font-mono text-xs text-gray-700 whitespace-nowrap">{coupon.code}</td>
-                <td className="px-4 py-3 text-xs text-gray-700 max-w-[160px] truncate">
-                  {coupon.campaignName}
-                </td>
-                <td className="px-4 py-3 text-xs">
-                  <p className="font-medium text-gray-800">{coupon.farmerName}</p>
-                  <p className="text-[10px] text-gray-400">{coupon.farmerMobile}</p>
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${TIER_STYLE[coupon.farmerTier]}`}>
-                    {coupon.farmerTier}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
-                  {fmtDate(coupon.issuedAt.slice(0, 10))}
-                </td>
-                <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
-                  {coupon.redeemedAt
-                    ? fmtDT(coupon.redeemedAt)
-                    : <span className="text-gray-300">—</span>}
-                </td>
-                <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
-                  {coupon.storeName
-                    ? coupon.storeName.replace('Bharat Agri Store – ', '')
-                    : <span className="text-gray-300">—</span>}
-                </td>
-                <td className="px-4 py-3 text-xs font-mono text-gray-700 whitespace-nowrap text-right">
-                  {coupon.invoiceValue != null
-                    ? `₹${fmtAmt(coupon.invoiceValue)}`
-                    : <span className="text-gray-300">—</span>}
-                </td>
-                <td className="px-4 py-3 text-xs font-mono font-semibold text-emerald-700 whitespace-nowrap text-right">
+      <TableWrap>
+        <thead>
+          <tr>
+            <Th>Code</Th>
+            <Th>Campaign</Th>
+            <Th>Farmer</Th>
+            <Th>Tier</Th>
+            <Th>Issued</Th>
+            <Th>Redeemed At</Th>
+            <Th>Store</Th>
+            <Th right>Invoice</Th>
+            <Th right>Discount</Th>
+            <Th>Status</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.map(coupon => (
+            <Tr key={coupon.id}>
+              <Td mono>{coupon.code}</Td>
+              <Td>
+                <span className="max-w-[160px] truncate block">{coupon.campaignName}</span>
+              </Td>
+              <Td>
+                <p className="font-medium text-gray-800 text-xs">{coupon.farmerName}</p>
+                <p className="text-[10px] text-gray-400">{coupon.farmerMobile}</p>
+              </Td>
+              <Td>
+                <Badge variant={getTierVariant(coupon.farmerTier)}>{coupon.farmerTier}</Badge>
+              </Td>
+              <Td muted>{fmtDate(coupon.issuedAt.slice(0, 10))}</Td>
+              <Td muted>
+                {coupon.redeemedAt
+                  ? fmtDT(coupon.redeemedAt)
+                  : <span className="text-gray-300">—</span>}
+              </Td>
+              <Td muted>
+                {coupon.storeName
+                  ? coupon.storeName.replace('Bharat Agri Store – ', '')
+                  : <span className="text-gray-300">—</span>}
+              </Td>
+              <Td right mono>
+                {coupon.invoiceValue != null
+                  ? `₹${fmtAmt(coupon.invoiceValue)}`
+                  : <span className="text-gray-300">—</span>}
+              </Td>
+              <Td right mono bold>
+                <span className="text-emerald-700">
                   {coupon.discountApplied != null
                     ? `₹${fmtAmt(coupon.discountApplied)}`
                     : <span className="text-gray-300">—</span>}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  {coupon.redeemedAt ? (
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                      Redeemed
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                      Pending
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
+                </span>
+              </Td>
+              <Td>
+                <Badge variant={getStatusVariant(coupon.redeemedAt ? 'Redeemed' : 'Pending')}>
+                  {coupon.redeemedAt ? 'Redeemed' : 'Pending'}
+                </Badge>
+              </Td>
+            </Tr>
+          ))}
 
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={10} className="px-4 py-12 text-center text-sm text-gray-400">
-                  No coupons match the selected filters.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+          {filtered.length === 0 && (
+            <tr>
+              <td colSpan={10} className="px-4 py-12 text-center text-sm text-gray-400">
+                No coupons match the selected filters.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </TableWrap>
     </div>
   );
 }

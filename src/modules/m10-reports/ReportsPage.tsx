@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Download, BarChart3, TrendingUp, IndianRupee, Users } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
+import Button from '../../components/ui/Button';
+import { Card } from '../../components/ui/Card';
+import EmptyState from '../../components/ui/EmptyState';
 import { mockOrders } from '../../data/mockOrders';
 
 const REPORT_TYPES = [
@@ -35,10 +38,9 @@ export default function ReportsPage() {
         title="Reports"
         subtitle="Operational analytics and exportable data summaries"
         actions={
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors bg-white">
-            <Download size={14} />
+          <Button variant="secondary" iconLeft={Download} size="sm">
             Export CSV
-          </button>
+          </Button>
         }
       />
 
@@ -102,17 +104,17 @@ export default function ReportsPage() {
               { label: 'B2B Revenue', value: `₹${b2bRevenue.toLocaleString('en-IN')}`, color: 'text-purple-600' },
               { label: 'Transactions', value: `${mockOrders.length}`, color: 'text-gray-900' },
             ].map((kpi) => (
-              <div key={kpi.label} className="bg-white rounded-xl border border-gray-200 p-4">
+              <Card key={kpi.label} padding="16px">
                 <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">{kpi.label}</p>
                 <p className={`text-2xl font-bold mt-1 ${kpi.color}`}>{kpi.value}</p>
-              </div>
+              </Card>
             ))}
           </div>
 
           {/* Chart + table */}
           <div className="xl:col-span-2 space-y-4">
             {/* Bar chart */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <Card padding="20px">
               <h3 className="text-sm font-semibold text-gray-800 mb-4">Monthly Revenue Trend (₹)</h3>
               <div className="flex items-end gap-3 h-40">
                 {MONTHLY_SALES.map((m) => (
@@ -128,10 +130,10 @@ export default function ReportsPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
 
             {/* Payment mode breakdown */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <Card padding="20px">
               <h3 className="text-sm font-semibold text-gray-800 mb-4">Payment Mode Distribution</h3>
               <div className="space-y-3">
                 {[
@@ -154,19 +156,19 @@ export default function ReportsPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
           </div>
         </div>
       )}
 
       {selectedReport !== 'sales' && (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <BarChart3 size={40} className="text-gray-200 mx-auto mb-3" />
-          <p className="text-gray-500 text-sm font-medium">
-            {REPORT_TYPES.find((r) => r.id === selectedReport)?.label} report
-          </p>
-          <p className="text-gray-400 text-xs mt-1">Connect to live API to populate this report</p>
-        </div>
+        <Card padding="20px">
+          <EmptyState
+            icon={BarChart3}
+            title={`${REPORT_TYPES.find((r) => r.id === selectedReport)?.label ?? ''} report`}
+            subtitle="Connect to live API to populate this report"
+          />
+        </Card>
       )}
     </div>
   );

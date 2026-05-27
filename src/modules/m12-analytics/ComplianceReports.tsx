@@ -3,6 +3,11 @@ import { Download, FileText, Mail, CheckCircle2, AlertCircle } from 'lucide-reac
 import { mockSaleTransactions } from '../../data/mockSaleTransactions';
 import { mockFarmers } from '../../data/mockFarmers';
 import { mockStores } from '../../data/mockStores';
+import Button from '../../components/ui/Button';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
+import { Card } from '../../components/ui/Card';
+import { Select } from '../../components/ui/Input';
+import Badge from '../../components/ui/Badge';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -28,11 +33,11 @@ function kycStatusForTxn(farmerId: string): KycStatus {
   return 'ManualFallback';
 }
 
-const KYC_STYLE: Record<KycStatus, string> = {
-  Verified:       'bg-emerald-100 text-emerald-700',
-  Pending:        'bg-amber-100 text-amber-700',
-  Rejected:       'bg-red-100 text-red-700',
-  ManualFallback: 'bg-orange-100 text-orange-700',
+const KYC_BADGE_VARIANT: Record<KycStatus, 'green' | 'amber' | 'red' | 'orange'> = {
+  Verified:       'green',
+  Pending:        'amber',
+  Rejected:       'red',
+  ManualFallback: 'orange',
 };
 
 // ── Export bar ────────────────────────────────────────────────────────────────
@@ -40,18 +45,30 @@ const KYC_STYLE: Record<KycStatus, string> = {
 function ExportBar({ reportName }: { reportName: string }) {
   return (
     <div className="flex items-center gap-2 ml-auto">
-      <button onClick={() => console.log(`// GET /api/reports/${reportName}/csv`)}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 bg-white">
-        <Download size={12} /> CSV
-      </button>
-      <button onClick={() => console.log(`// GET /api/reports/${reportName}/pdf`)}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 bg-white">
-        <FileText size={12} /> PDF
-      </button>
-      <button onClick={() => console.log('// POST /api/reports/schedule', { report: reportName })}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-emerald-200 rounded-lg text-emerald-700 hover:bg-emerald-50 bg-white">
-        <Mail size={12} /> Schedule Email
-      </button>
+      <Button
+        variant="secondary"
+        size="sm"
+        iconLeft={Download}
+        onClick={() => console.log(`// GET /api/reports/${reportName}/csv`)}
+      >
+        CSV
+      </Button>
+      <Button
+        variant="secondary"
+        size="sm"
+        iconLeft={FileText}
+        onClick={() => console.log(`// GET /api/reports/${reportName}/pdf`)}
+      >
+        PDF
+      </Button>
+      <Button
+        variant="secondary"
+        size="sm"
+        iconLeft={Mail}
+        onClick={() => console.log('// POST /api/reports/schedule', { report: reportName })}
+      >
+        Schedule Email
+      </Button>
     </div>
   );
 }
@@ -88,92 +105,118 @@ function UreaDAPReport() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
-          className="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-700" />
-        <select value={storeId} onChange={(e) => setStoreId(e.target.value)}
-          className="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-700">
-          <option value="All">All Stores</option>
-          {mockStores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
-        <button
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-700"
+        />
+        <div style={{ width: '160px' }}>
+          <Select value={storeId} onChange={setStoreId}>
+            <option value="All">All Stores</option>
+            {mockStores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </Select>
+        </div>
+        <Button
+          variant="primary"
+          size="sm"
+          iconLeft={Download}
           onClick={() => console.log('// GET /api/reports/urea-dap/compliance-format', { date, storeId })}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
-          <Download size={12} />
           Export Compliance Format
-        </button>
+        </Button>
         <ExportBar reportName="urea-dap-daily" />
       </div>
 
       {/* Summary */}
       <div className="flex flex-wrap gap-3">
-        <div className="bg-white border border-gray-200 rounded-xl px-4 py-3">
+        <Card padding="12px 16px">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Transactions</p>
           <p className="text-lg font-bold text-gray-900">{rows.length}</p>
-        </div>
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+        </Card>
+        <div
+          style={{
+            backgroundColor: 'var(--status-green-bg)',
+            border: '1px solid #a7f3d0',
+            borderRadius: 'var(--radius-lg)',
+            padding: '12px 16px',
+          }}
+        >
           <p className="text-[10px] font-semibold text-emerald-500 uppercase tracking-widest">e-KYC Verified</p>
-          <p className="text-lg font-bold text-emerald-700">{eKycVerified} <span className="text-sm font-medium">({pctVerified.toFixed(0)}%)</span></p>
+          <p className="text-lg font-bold text-emerald-700">
+            {eKycVerified} <span className="text-sm font-medium">({pctVerified.toFixed(0)}%)</span>
+          </p>
         </div>
         {manualFallback > 0 && (
-          <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
+          <div
+            style={{
+              backgroundColor: '#fff7ed',
+              border: '1px solid #fed7aa',
+              borderRadius: 'var(--radius-lg)',
+              padding: '12px 16px',
+            }}
+          >
             <p className="text-[10px] font-semibold text-orange-500 uppercase tracking-widest">Manual Fallback</p>
             <p className="text-lg font-bold text-orange-700">{manualFallback}</p>
           </div>
         )}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="text-left px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Invoice No</th>
-              <th className="text-left px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide">Store</th>
-              <th className="text-left px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide">Farmer</th>
-              <th className="text-left px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Aadhaar Last 4</th>
-              <th className="text-left px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide">Products (Subsidised)</th>
-              <th className="text-right px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
-              <th className="text-left px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">e-KYC Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {rows.map(({ txn, farmer, store, kycStatus, products, subLines }) => {
-              const subAmt = subLines.reduce((s, l) => s + l.lineTotal, 0);
-              return (
-                <tr key={txn.id} className={`hover:bg-gray-50 transition-colors ${kycStatus === 'ManualFallback' ? 'bg-orange-50/40' : ''}`}>
-                  <td className="px-3 py-2 font-mono text-gray-700">{txn.invoiceNo}</td>
-                  <td className="px-3 py-2 text-gray-600 max-w-[120px] truncate">{store?.name ?? txn.storeId}</td>
-                  <td className="px-3 py-2">
-                    <p className="font-medium text-gray-800">{farmer?.name ?? txn.farmerId}</p>
-                    <p className="text-gray-400">{farmer?.address.village ?? '—'}</p>
-                  </td>
-                  <td className="px-3 py-2 font-mono text-gray-600">
-                    {farmer?.aadhaarLast4 ? `XXXX-${farmer.aadhaarLast4}` : '—'}
-                  </td>
-                  <td className="px-3 py-2 text-gray-700 max-w-[200px] truncate" title={products}>{products}</td>
-                  <td className="px-3 py-2 text-right font-semibold text-gray-800">{fmt(subAmt)}</td>
-                  <td className="px-3 py-2">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold ${KYC_STYLE[kycStatus]}`}>
+      <TableWrap>
+        <thead>
+          <tr>
+            <Th>Invoice No</Th>
+            <Th>Store</Th>
+            <Th>Farmer</Th>
+            <Th>Aadhaar Last 4</Th>
+            <Th>Products (Subsidised)</Th>
+            <Th right>Amount</Th>
+            <Th>e-KYC Status</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ txn, farmer, store, kycStatus, products, subLines }) => {
+            const subAmt = subLines.reduce((s, l) => s + l.lineTotal, 0);
+            return (
+              <Tr key={txn.id} className={kycStatus === 'ManualFallback' ? 'bg-orange-50/40' : ''}>
+                <Td mono>{txn.invoiceNo}</Td>
+                <Td muted>{store?.name ?? txn.storeId}</Td>
+                <Td>
+                  <p className="font-medium text-gray-800 text-xs">{farmer?.name ?? txn.farmerId}</p>
+                  <p className="text-gray-400 text-[11px]">{farmer?.address.village ?? '—'}</p>
+                </Td>
+                <Td mono muted>
+                  {farmer?.aadhaarLast4 ? `XXXX-${farmer.aadhaarLast4}` : '—'}
+                </Td>
+                <Td>
+                  <span className="text-xs text-gray-700 max-w-[200px] truncate block" title={products}>
+                    {products}
+                  </span>
+                </Td>
+                <Td right bold>{fmt(subAmt)}</Td>
+                <Td>
+                  <Badge variant={KYC_BADGE_VARIANT[kycStatus]}>
+                    <span className="inline-flex items-center gap-1">
                       {kycStatus === 'Verified'
                         ? <CheckCircle2 size={10} />
                         : <AlertCircle size={10} />
                       }
                       {kycStatus === 'ManualFallback' ? 'Manual Fallback' : kycStatus}
                     </span>
-                  </td>
-                </tr>
-              );
-            })}
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-3 py-10 text-center text-gray-400">
-                  No subsidised fertiliser transactions on {date}.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                  </Badge>
+                </Td>
+              </Tr>
+            );
+          })}
+          {rows.length === 0 && (
+            <tr>
+              <td colSpan={7} className="px-3 py-10 text-center text-gray-400 text-sm">
+                No subsidised fertiliser transactions on {date}.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </TableWrap>
     </div>
   );
 }
@@ -181,10 +224,10 @@ function UreaDAPReport() {
 // ── Monthly Compliance Summary ────────────────────────────────────────────────
 
 const MONTHLY_COMPLIANCE = [
-  { month: '2026-04', label: 'April 2026',  transactions: 48, subsidisedKg: 4200, eKycPct: 85.4, manualPct: 14.6, totalSubsidisedAmt: 218400 },
-  { month: '2026-03', label: 'March 2026',  transactions: 62, subsidisedKg: 5800, eKycPct: 88.7, manualPct: 11.3, totalSubsidisedAmt: 298600 },
+  { month: '2026-04', label: 'April 2026',    transactions: 48, subsidisedKg: 4200, eKycPct: 85.4, manualPct: 14.6, totalSubsidisedAmt: 218400 },
+  { month: '2026-03', label: 'March 2026',    transactions: 62, subsidisedKg: 5800, eKycPct: 88.7, manualPct: 11.3, totalSubsidisedAmt: 298600 },
   { month: '2026-02', label: 'February 2026', transactions: 31, subsidisedKg: 2400, eKycPct: 80.6, manualPct: 19.4, totalSubsidisedAmt: 128000 },
-  { month: '2026-01', label: 'January 2026', transactions: 27, subsidisedKg: 1900, eKycPct: 92.6, manualPct: 7.4, totalSubsidisedAmt: 96200 },
+  { month: '2026-01', label: 'January 2026',  transactions: 27, subsidisedKg: 1900, eKycPct: 92.6, manualPct:  7.4, totalSubsidisedAmt:  96200 },
 ];
 
 // Derive May 2026 from actual transaction data
@@ -219,63 +262,68 @@ function MonthlyComplianceSummary() {
           <span>Benchmark: e-KYC verification rate must be ≥ 80% per DBTL norms. Flag stores below threshold.</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="primary"
+            size="sm"
+            iconLeft={Download}
             onClick={() => console.log('// GET /api/reports/compliance/monthly-export/government-format')}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            <Download size={12} />
             Export Govt. Format
-          </button>
+          </Button>
           <ExportBar reportName="monthly-compliance" />
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="text-left px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide">Month</th>
-              <th className="text-right px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide">Transactions</th>
-              <th className="text-right px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Subsidised Amt</th>
-              <th className="text-right px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">e-KYC Verified</th>
-              <th className="text-right px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Manual Fallback</th>
-              <th className="text-left px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide">Compliance</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {ALL_MONTHLY.map((row) => {
-              const compliant = row.eKycPct >= 80;
-              return (
-                <tr key={row.month} className={`hover:bg-gray-50 transition-colors ${!compliant ? 'bg-red-50/40' : ''}`}>
-                  <td className="px-3 py-2 font-medium text-gray-800">{row.label}</td>
-                  <td className="px-3 py-2 text-right text-gray-700">{row.transactions}</td>
-                  <td className="px-3 py-2 text-right font-semibold text-gray-800">{fmt(row.totalSubsidisedAmt)}</td>
-                  <td className="px-3 py-2 text-right">
-                    <span className={`font-semibold ${row.eKycPct >= 90 ? 'text-emerald-700' : row.eKycPct >= 80 ? 'text-amber-600' : 'text-red-600'}`}>
-                      {row.eKycPct.toFixed(1)}%
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-right text-orange-600 font-medium">{row.manualPct.toFixed(1)}%</td>
-                  <td className="px-3 py-2">
-                    {compliant ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-700">
+      <TableWrap>
+        <thead>
+          <tr>
+            <Th>Month</Th>
+            <Th right>Transactions</Th>
+            <Th right>Subsidised Amt</Th>
+            <Th right>e-KYC Verified</Th>
+            <Th right>Manual Fallback</Th>
+            <Th>Compliance</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {ALL_MONTHLY.map((row) => {
+            const compliant = row.eKycPct >= 80;
+            return (
+              <Tr key={row.month} className={!compliant ? 'bg-red-50/40' : ''}>
+                <Td bold>{row.label}</Td>
+                <Td right muted>{row.transactions}</Td>
+                <Td right bold>{fmt(row.totalSubsidisedAmt)}</Td>
+                <Td right>
+                  <span className={`font-semibold text-xs ${row.eKycPct >= 90 ? 'text-emerald-700' : row.eKycPct >= 80 ? 'text-amber-600' : 'text-red-600'}`}>
+                    {row.eKycPct.toFixed(1)}%
+                  </span>
+                </Td>
+                <Td right>
+                  <span className="text-orange-600 font-medium text-xs">{row.manualPct.toFixed(1)}%</span>
+                </Td>
+                <Td>
+                  {compliant ? (
+                    <Badge variant="green">
+                      <span className="inline-flex items-center gap-1">
                         <CheckCircle2 size={10} /> Compliant
                       </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-red-100 text-red-700">
+                    </Badge>
+                  ) : (
+                    <Badge variant="red">
+                      <span className="inline-flex items-center gap-1">
                         <AlertCircle size={10} /> Below Threshold
                       </span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                    </Badge>
+                  )}
+                </Td>
+              </Tr>
+            );
+          })}
+        </tbody>
+      </TableWrap>
 
       {/* Bar chart — e-KYC trend */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <Card padding="20px">
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">e-KYC Verification Trend</h3>
         <div className="flex items-end gap-4 h-28">
           {[...ALL_MONTHLY].reverse().map((row) => {
@@ -295,7 +343,7 @@ function MonthlyComplianceSummary() {
           })}
         </div>
         <p className="text-[10px] text-red-400 mt-2">— 80% DBTL minimum threshold</p>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -311,10 +359,15 @@ export default function ComplianceReports() {
     <div className="space-y-5">
       <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
         {([['daily', 'Urea/DAP Daily Report'], ['monthly', 'Monthly Compliance Summary']] as const).map(([id, label]) => (
-          <button key={id} onClick={() => setSub(id)}
+          <button
+            key={id}
+            onClick={() => setSub(id)}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
               sub === id ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-            }`}>{label}</button>
+            }`}
+          >
+            {label}
+          </button>
         ))}
       </div>
 

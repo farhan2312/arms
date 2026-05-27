@@ -1,9 +1,13 @@
-import { useState, createElement } from 'react';
+import { useState } from 'react';
 import { Store, Users, Bell, Shield, Database, ChevronRight } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
 import { MOCK_USERS } from '../../data/mockUsers';
 import { storeById } from '../../data/mockStores';
 import Badge from '../../components/ui/Badge';
+import { Card, CardHeader } from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
+import EmptyState from '../../components/ui/EmptyState';
 import type { UserRole } from '../../types/roles';
 
 const ROLE_COLORS: Record<UserRole, 'blue' | 'purple' | 'orange' | 'green' | 'yellow' | 'gray'> = {
@@ -37,7 +41,7 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         {/* Sidebar nav */}
         <div className="xl:col-span-1">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <Card padding="0">
             {SETTING_SECTIONS.map((section) => {
               const Icon = section.icon;
               return (
@@ -56,14 +60,14 @@ export default function SettingsPage() {
                 </button>
               );
             })}
-          </div>
+          </Card>
         </div>
 
         {/* Content */}
         <div className="xl:col-span-3">
           {activeSection === 'store' && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-              <h2 className="text-sm font-bold text-gray-800">Store Profile</h2>
+            <Card padding="24px">
+              <h2 className="text-sm font-bold text-gray-800 mb-4">Store Profile</h2>
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { label: 'Store Name', value: 'Bharat Agri Store – Akola' },
@@ -82,7 +86,7 @@ export default function SettingsPage() {
                   </div>
                 ))}
               </div>
-              <div>
+              <div className="mt-4">
                 <label className="text-[11px] text-gray-400 font-semibold uppercase tracking-wide block mb-1">Full Address</label>
                 <textarea
                   rows={2}
@@ -90,30 +94,28 @@ export default function SettingsPage() {
                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
                 />
               </div>
-              <button className="px-5 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
-                Save Changes
-              </button>
-            </div>
+              <div className="mt-4">
+                <Button variant="primary" size="sm">Save Changes</Button>
+              </div>
+            </Card>
           )}
 
           {activeSection === 'users' && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="text-sm font-bold text-gray-800">Users & Roles</h2>
-                <button className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700 transition-colors">
-                  Invite User
-                </button>
-              </div>
-              <table className="w-full text-sm">
+            <>
+              <CardHeader
+                title="Users & Roles"
+                right={<Button variant="primary" size="sm">Invite User</Button>}
+              />
+              <TableWrap>
                 <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50">
-                    <th className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Name</th>
-                    <th className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Mobile / Email</th>
-                    <th className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Role</th>
-                    <th className="text-left px-5 py-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">Assigned To</th>
+                  <tr>
+                    <Th>Name</Th>
+                    <Th>Mobile / Email</Th>
+                    <Th>Role</Th>
+                    <Th>Assigned To</Th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody>
                   {MOCK_USERS.map((user) => {
                     const primaryStoreId = user.assignedStoreIds[0];
                     const store = primaryStoreId ? storeById.get(primaryStoreId) : undefined;
@@ -123,8 +125,8 @@ export default function SettingsPage() {
                       ? 'Platform-wide'
                       : `${user.assignedStoreIds.length} stores`;
                     return (
-                      <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-5 py-3.5">
+                      <Tr key={user.id}>
+                        <Td>
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-xs font-bold flex-shrink-0">
                               {user.name.split(' ').map((n) => n[0]).slice(0, 2).join('')}
@@ -134,39 +136,32 @@ export default function SettingsPage() {
                               <p className="text-[11px] text-gray-400 font-mono">{user.employeeCode}</p>
                             </div>
                           </div>
-                        </td>
-                        <td className="px-5 py-3.5">
+                        </Td>
+                        <Td>
                           <p className="text-xs text-gray-600">{user.mobile}</p>
                           {user.email && <p className="text-[11px] text-gray-400">{user.email}</p>}
-                        </td>
-                        <td className="px-5 py-3.5">
+                        </Td>
+                        <Td>
                           <Badge label={user.role} variant={ROLE_COLORS[user.role]} />
-                        </td>
-                        <td className="px-5 py-3.5 text-xs text-gray-500 max-w-[200px] truncate">{assignedLabel}</td>
-                      </tr>
+                        </Td>
+                        <Td muted>{assignedLabel}</Td>
+                      </Tr>
                     );
                   })}
                 </tbody>
-              </table>
-            </div>
+              </TableWrap>
+            </>
           )}
 
           {(activeSection === 'notifications' || activeSection === 'permissions' || activeSection === 'data') && (
-            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
-                {createElement(
-                  SETTING_SECTIONS.find((s) => s.id === activeSection)!.icon,
-                  { size: 22, className: 'text-gray-400' },
-                )}
-              </div>
-              <p className="text-gray-600 text-sm font-medium">
-                {SETTING_SECTIONS.find((s) => s.id === activeSection)?.label}
-              </p>
-              <p className="text-gray-400 text-xs mt-1">
-                {SETTING_SECTIONS.find((s) => s.id === activeSection)?.description}
-              </p>
-              <p className="text-gray-300 text-xs mt-4">Configuration coming soon</p>
-            </div>
+            <Card padding="48px">
+              <EmptyState
+                icon={SETTING_SECTIONS.find((s) => s.id === activeSection)!.icon}
+                iconColor="#9ca3af"
+                title={SETTING_SECTIONS.find((s) => s.id === activeSection)?.label ?? ''}
+                subtitle={SETTING_SECTIONS.find((s) => s.id === activeSection)?.description}
+              />
+            </Card>
           )}
         </div>
       </div>

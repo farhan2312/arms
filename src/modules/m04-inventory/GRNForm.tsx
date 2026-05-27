@@ -3,7 +3,8 @@
 // POST /api/grn when backend ready
 
 import { useState, useId } from 'react';
-import { Plus, Trash2, AlertTriangle, CheckCircle2, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, AlertTriangle, ChevronDown } from 'lucide-react';
+import { useToast } from '../../hooks/useToast';
 import { mockProducts, productById } from '../../data/mockProducts';
 import { mockStores } from '../../data/mockStores';
 import { useAuth } from '../../context/AuthContext';
@@ -50,6 +51,7 @@ const ALL_LOCATIONS: Location[] = [
 export default function GRNForm({ onBatchesAdded }: GRNFormProps) {
   const uid = useId();
   const { currentStore } = useAuth();
+  const toast = useToast();
 
   // Header fields
   const [supplierName,  setSupplierName]  = useState('');
@@ -62,8 +64,6 @@ export default function GRNForm({ onBatchesAdded }: GRNFormProps) {
   // Line items
   const [lines, setLines] = useState<GRNLine[]>([makeEmptyLine(`${uid}-0`)]);
 
-  // Toast / saved state
-  const [toast, setToast]     = useState<string | null>(null);
   const [errors, setErrors]   = useState<string[]>([]);
   const [grnCounter, setGrnCounter] = useState(1);
 
@@ -139,8 +139,7 @@ export default function GRNForm({ onBatchesAdded }: GRNFormProps) {
 
     onBatchesAdded(newBatches);
     setGrnCounter(n => n + 1);
-    setToast(`GRN ${grnId} recorded. ${newBatches.length} batch${newBatches.length !== 1 ? 'es' : ''} added to stock.`);
-    setTimeout(() => setToast(null), 5000);
+    toast.success(`GRN ${grnId} recorded. ${newBatches.length} batch${newBatches.length !== 1 ? 'es' : ''} added to stock.`);
 
     // Reset form
     setSupplierName('');
@@ -166,13 +165,6 @@ export default function GRNForm({ onBatchesAdded }: GRNFormProps) {
         </div>
       )}
 
-      {/* ── Toast ────────────────────────────────────────────────────────── */}
-      {toast && (
-        <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-300 rounded-xl px-4 py-3">
-          <CheckCircle2 size={15} className="text-emerald-600 flex-shrink-0" />
-          <p className="text-sm text-emerald-800 font-medium">{toast}</p>
-        </div>
-      )}
 
       {/* ── Validation errors ─────────────────────────────────────────────── */}
       {errors.length > 0 && (

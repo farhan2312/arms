@@ -3,9 +3,10 @@
 
 import { useState, useMemo } from 'react';
 import {
-  Plus, Trash2, CheckCircle2, Clock, AlertTriangle,
+  Plus, Trash2, Clock, AlertTriangle,
   ArrowRight, Package, ChevronDown,
 } from 'lucide-react';
+import { useToast } from '../../hooks/useToast';
 import { mockBatches } from '../../data/mockBatches';
 import { productById } from '../../data/mockProducts';
 import { mockStores } from '../../data/mockStores';
@@ -144,6 +145,7 @@ function hoursAgo(iso: string): number {
 
 export default function TransferChallanForm() {
   const { currentStore } = useAuth();
+  const toast = useToast();
 
   const defaultSource = currentStore?.id ?? WAREHOUSES[0]?.id ?? '';
   const [sourceId,  setSourceId]  = useState<string>(defaultSource);
@@ -152,7 +154,6 @@ export default function TransferChallanForm() {
   const [remarks,   setRemarks]   = useState('');
 
   const [pendingDTCs, setPendingDTCs] = useState<DTC[]>(SEED_DTCS);
-  const [toast,       setToast]       = useState<string | null>(null);
   const [errors,      setErrors]      = useState<string[]>([]);
 
   // "In-transit" qty to subtract from source batches for current-session DTCs
@@ -260,8 +261,7 @@ export default function TransferChallanForm() {
     });
 
     setPendingDTCs(prev => [dtc, ...prev]);
-    setToast(`${dtcNo} created. Stock movement pending acknowledgment by ${locationName(destId)}.`);
-    setTimeout(() => setToast(null), 5000);
+    toast.success(`${dtcNo} created. Stock movement pending acknowledgment by ${locationName(destId)}.`);
 
     // Reset form
     setLines([makeEmptyLine()]);
@@ -284,13 +284,6 @@ export default function TransferChallanForm() {
   return (
     <div className="space-y-5">
 
-      {/* ── Toast ────────────────────────────────────────────────────────── */}
-      {toast && (
-        <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-300 rounded-xl px-4 py-3">
-          <CheckCircle2 size={15} className="text-emerald-600 flex-shrink-0" />
-          <p className="text-sm text-emerald-800 font-medium">{toast}</p>
-        </div>
-      )}
 
       {/* ── Errors ───────────────────────────────────────────────────────── */}
       {errors.length > 0 && (

@@ -2,7 +2,6 @@
 // Manages: farmers, outreachLogs, flaggedIds, farmerLanguages, selected farmer, form visibility
 
 import { useState } from 'react';
-import { Users, Megaphone } from 'lucide-react';
 import { mockFarmers } from '../../data/mockFarmers';
 import { SEED_OUTREACH } from './OutreachLog';
 import type { OutreachEntry } from './OutreachLog';
@@ -10,14 +9,13 @@ import FarmerList from './FarmerList';
 import FarmerProfile from './FarmerProfile';
 import FarmerForm from './FarmerForm';
 import OutreachLog from './OutreachLog';
+import PageHeader from '../../components/ui/PageHeader';
+import Tabs from '../../components/ui/Tabs';
+import Button from '../../components/ui/Button';
+import { Plus } from 'lucide-react';
 import type { Farmer } from '../../types/entities';
 
 type CRMTab = 'farmers' | 'outreach';
-
-const TABS: { key: CRMTab; label: string; icon: React.ElementType }[] = [
-  { key: 'farmers',  label: 'Farmers',      icon: Users     },
-  { key: 'outreach', label: 'Outreach Log', icon: Megaphone },
-];
 
 export default function CRMPage() {
   const [farmers, setFarmers] = useState<Farmer[]>(mockFarmers);
@@ -48,13 +46,24 @@ export default function CRMPage() {
 
   const selectedFarmer = selectedFarmerId ? farmers.find(f => f.id === selectedFarmerId) ?? null : null;
 
+  const TABS = [
+    { id: 'farmers',  label: 'Farmers' },
+    { id: 'outreach', label: 'Outreach Log' },
+  ];
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Page heading */}
-      <div className="mb-5">
-        <h1 className="text-xl font-bold text-gray-900">Farmer CRM</h1>
-        <p className="text-sm text-gray-500 mt-0.5">{farmers.length} registered farmers</p>
-      </div>
+      <PageHeader
+        title="Farmer CRM"
+        subtitle={`${farmers.length} registered farmers`}
+        actions={
+          tab === 'farmers' && !selectedFarmer ? (
+            <Button variant="primary" iconLeft={Plus} onClick={() => setShowForm(true)}>
+              Add Farmer
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Profile view — replaces tab content when a farmer is selected */}
       {selectedFarmer ? (
@@ -69,21 +78,12 @@ export default function CRMPage() {
       ) : (
         <>
           {/* Tab bar */}
-          <div className="flex gap-1 mb-5 border-b border-gray-200">
-            {TABS.map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => setTab(key)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
-                  tab === key
-                    ? 'border-emerald-600 text-emerald-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <Icon size={14} />
-                {label}
-              </button>
-            ))}
+          <div style={{ marginBottom: '20px' }}>
+            <Tabs
+              tabs={TABS}
+              activeTab={tab}
+              onTabChange={(id) => setTab(id as CRMTab)}
+            />
           </div>
 
           {/* Tab content */}

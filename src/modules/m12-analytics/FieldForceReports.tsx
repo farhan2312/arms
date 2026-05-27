@@ -3,6 +3,11 @@ import { Download, FileText, Mail } from 'lucide-react';
 import { MOCK_USERS } from '../../data/mockUsers';
 import { SEED_JOURNEYS } from '../m11-fieldforce/JourneyLog';
 import { SEED_MEETINGS } from '../m11-fieldforce/MeetingLog';
+import Button from '../../components/ui/Button';
+import { Card } from '../../components/ui/Card';
+import { Select } from '../../components/ui/Input';
+import { TableWrap, Th, Td, Tr } from '../../components/ui/Table';
+import Badge, { getStatusVariant } from '../../components/ui/Badge';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -15,18 +20,18 @@ function fmt(n: number) {
 function ExportBar({ reportName }: { reportName: string }) {
   return (
     <div className="flex items-center gap-2 ml-auto">
-      <button onClick={() => console.log(`// GET /api/reports/${reportName}/csv`)}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 bg-white">
-        <Download size={12} /> CSV
-      </button>
-      <button onClick={() => console.log(`// GET /api/reports/${reportName}/pdf`)}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 bg-white">
-        <FileText size={12} /> PDF
-      </button>
-      <button onClick={() => console.log('// POST /api/reports/schedule', { report: reportName })}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-emerald-200 rounded-lg text-emerald-700 hover:bg-emerald-50 bg-white">
-        <Mail size={12} /> Schedule Email
-      </button>
+      <Button variant="secondary" size="sm" iconLeft={Download}
+        onClick={() => console.log(`// GET /api/reports/${reportName}/csv`)}>
+        CSV
+      </Button>
+      <Button variant="secondary" size="sm" iconLeft={FileText}
+        onClick={() => console.log(`// GET /api/reports/${reportName}/pdf`)}>
+        PDF
+      </Button>
+      <Button variant="secondary" size="sm" iconLeft={Mail}
+        onClick={() => console.log('// POST /api/reports/schedule', { report: reportName })}>
+        Schedule Email
+      </Button>
     </div>
   );
 }
@@ -42,12 +47,6 @@ const MONTHS = [
 // ── TA/DA Summary ─────────────────────────────────────────────────────────────
 
 type ClaimStatus = 'Pending' | 'Approved' | 'Flagged';
-
-const STATUS_STYLE: Record<ClaimStatus, string> = {
-  Pending:  'bg-amber-100 text-amber-700',
-  Approved: 'bg-emerald-100 text-emerald-700',
-  Flagged:  'bg-red-100 text-red-700',
-};
 
 // Deviation threshold — >20% over expected distance
 const EXPECTED_KM: Record<string, number> = {
@@ -111,89 +110,87 @@ function TADASummary() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap">
-        <select value={month} onChange={(e) => setMonth(e.target.value)}
-          className="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-700">
-          {MONTHS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-        </select>
-        <button onClick={approveAll}
-          className="px-3 py-1.5 text-xs font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+        <div style={{ width: '160px' }}>
+          <Select value={month} onChange={setMonth}>
+            {MONTHS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+          </Select>
+        </div>
+        <Button variant="primary" size="sm" onClick={approveAll}>
           Approve All (Non-Flagged)
-        </button>
+        </Button>
         <ExportBar reportName="tada-summary" />
       </div>
 
       <div className="flex gap-3">
-        <div className="bg-white border border-gray-200 rounded-xl px-4 py-3">
+        <Card padding="12px 16px">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Total TA</p>
           <p className="text-lg font-bold text-gray-900">{fmt(totalTA)}</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl px-4 py-3">
+        </Card>
+        <Card padding="12px 16px">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Total DA</p>
           <p className="text-lg font-bold text-gray-900">{fmt(totalDA)}</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl px-4 py-3">
+        </Card>
+        <Card padding="12px 16px">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Total Claim</p>
           <p className="text-lg font-bold text-emerald-700">{fmt(totalTA + totalDA)}</p>
-        </div>
+        </Card>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="text-left px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide">Name</th>
-              <th className="text-left px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide">Role</th>
-              <th className="text-left px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Emp Code</th>
-              <th className="text-right px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide">Journeys</th>
-              <th className="text-right px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Total KM</th>
-              <th className="text-right px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide">TA</th>
-              <th className="text-right px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide">DA</th>
-              <th className="text-right px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Total Claim</th>
-              <th className="text-left px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-              <th className="px-3 py-2.5" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {rows.map((r) => {
-              const status = getStatus(r.userId, r.deviations);
-              return (
-                <tr key={r.userId} className={`hover:bg-gray-50 transition-colors ${r.deviations > 0 ? 'bg-red-50/40' : ''}`}>
-                  <td className="px-3 py-2 font-medium text-gray-800">{r.name}</td>
-                  <td className="px-3 py-2 text-gray-600">{r.role}</td>
-                  <td className="px-3 py-2 font-mono text-gray-500">{r.employeeCode}</td>
-                  <td className="px-3 py-2 text-right text-gray-700">{r.journeyCount}</td>
-                  <td className="px-3 py-2 text-right text-gray-700">{r.totalKm}</td>
-                  <td className="px-3 py-2 text-right text-gray-700">{fmt(r.ta)}</td>
-                  <td className="px-3 py-2 text-right text-gray-700">{fmt(r.da)}</td>
-                  <td className="px-3 py-2 text-right font-semibold text-gray-800">{fmt(r.ta + r.da)}</td>
-                  <td className="px-3 py-2">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${STATUS_STYLE[status]}`}>
-                      {status}
-                      {r.deviations > 0 && status !== 'Approved' && ` (${r.deviations} dev.)`}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">
-                    {status !== 'Approved' && (
-                      <button
-                        onClick={() => {
-                          setStatuses((prev) => ({ ...prev, [r.userId]: 'Approved' }));
-                          console.log('// PATCH /api/field-force/tada-claims/', r.userId, '{ status: Approved }');
-                        }}
-                        className="text-xs text-emerald-600 hover:text-emerald-800 font-medium"
-                      >
-                        Approve
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-            {rows.length === 0 && (
-              <tr><td colSpan={10} className="px-3 py-10 text-center text-gray-400">No journeys logged for {MONTHS.find((m) => m.value === month)?.label}.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <TableWrap>
+        <thead>
+          <tr>
+            <Th>Name</Th>
+            <Th>Role</Th>
+            <Th>Emp Code</Th>
+            <Th right>Journeys</Th>
+            <Th right>Total KM</Th>
+            <Th right>TA</Th>
+            <Th right>DA</Th>
+            <Th right>Total Claim</Th>
+            <Th>Status</Th>
+            <Th />
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => {
+            const status = getStatus(r.userId, r.deviations);
+            return (
+              <Tr key={r.userId} className={r.deviations > 0 ? 'bg-red-50/40' : ''}>
+                <Td bold>{r.name}</Td>
+                <Td>{r.role}</Td>
+                <Td mono muted>{r.employeeCode}</Td>
+                <Td right>{r.journeyCount}</Td>
+                <Td right>{r.totalKm}</Td>
+                <Td right>{fmt(r.ta)}</Td>
+                <Td right>{fmt(r.da)}</Td>
+                <Td right bold>{fmt(r.ta + r.da)}</Td>
+                <Td>
+                  <Badge
+                    label={`${status}${r.deviations > 0 && status !== 'Approved' ? ` (${r.deviations} dev.)` : ''}`}
+                    variant={getStatusVariant(status)}
+                  />
+                </Td>
+                <Td>
+                  {status !== 'Approved' && (
+                    <button
+                      onClick={() => {
+                        setStatuses((prev) => ({ ...prev, [r.userId]: 'Approved' }));
+                        console.log('// PATCH /api/field-force/tada-claims/', r.userId, '{ status: Approved }');
+                      }}
+                      className="text-xs text-emerald-600 hover:text-emerald-800 font-medium"
+                    >
+                      Approve
+                    </button>
+                  )}
+                </Td>
+              </Tr>
+            );
+          })}
+          {rows.length === 0 && (
+            <tr><td colSpan={10} className="px-4 py-10 text-center text-sm text-gray-400">No journeys logged for {MONTHS.find((m) => m.value === month)?.label}.</td></tr>
+          )}
+        </tbody>
+      </TableWrap>
     </div>
   );
 }
@@ -222,8 +219,8 @@ function MeetingLogSummary() {
         };
       }
       const r = userMap[uid];
-      r.meetingCount    += 1;
-      r.totalAttendees  += mtg.attendeeCount;
+      r.meetingCount   += 1;
+      r.totalAttendees += mtg.attendeeCount;
       if (mtg.type === 'Farmer Group Meeting') r.farmerMeetings += 1;
       if (mtg.type === 'Retailer Visit')       r.retailerVisits += 1;
     }
@@ -241,59 +238,58 @@ function MeetingLogSummary() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <select value={month} onChange={(e) => setMonth(e.target.value)}
-          className="px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-gray-700">
-          {MONTHS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-        </select>
+        <div style={{ width: '160px' }}>
+          <Select value={month} onChange={setMonth}>
+            {MONTHS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+          </Select>
+        </div>
         <ExportBar reportName="meeting-log-summary" />
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <div className="bg-white border border-gray-200 rounded-xl px-4 py-3">
+        <Card padding="12px 16px">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Farmer Meetings</p>
           <p className="text-lg font-bold text-gray-900">{totalFarmerMeetings}</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl px-4 py-3">
+        </Card>
+        <Card padding="12px 16px">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Retailer Visits</p>
           <p className="text-lg font-bold text-gray-900">{totalRetailerVisits}</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl px-4 py-3">
+        </Card>
+        <Card padding="12px 16px">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Avg Attendance</p>
           <p className="text-lg font-bold text-emerald-700">{avgAttendance}</p>
-        </div>
+        </Card>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="text-left px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide">User</th>
-              <th className="text-left px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide">Role</th>
-              <th className="text-left px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide">Month</th>
-              <th className="text-right px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Farmer Meetings</th>
-              <th className="text-right px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Retailer Visits</th>
-              <th className="text-right px-3 py-2.5 font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Avg Attendance</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {rows.map((r) => (
-              <tr key={r.userId} className="hover:bg-gray-50 transition-colors">
-                <td className="px-3 py-2 font-medium text-gray-800">{r.name}</td>
-                <td className="px-3 py-2 text-gray-600">{r.role}</td>
-                <td className="px-3 py-2 text-gray-600">{MONTHS.find((m) => m.value === month)?.label}</td>
-                <td className="px-3 py-2 text-right text-gray-700">{r.farmerMeetings}</td>
-                <td className="px-3 py-2 text-right text-gray-700">{r.retailerVisits}</td>
-                <td className="px-3 py-2 text-right font-semibold text-gray-800">
-                  {r.meetingCount > 0 ? Math.round(r.totalAttendees / r.meetingCount) : '—'}
-                </td>
-              </tr>
-            ))}
-            {rows.length === 0 && (
-              <tr><td colSpan={6} className="px-3 py-10 text-center text-gray-400">No meetings logged for this month.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <TableWrap>
+        <thead>
+          <tr>
+            <Th>User</Th>
+            <Th>Role</Th>
+            <Th>Month</Th>
+            <Th right>Farmer Meetings</Th>
+            <Th right>Retailer Visits</Th>
+            <Th right>Avg Attendance</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <Tr key={r.userId}>
+              <Td bold>{r.name}</Td>
+              <Td>{r.role}</Td>
+              <Td muted>{MONTHS.find((m) => m.value === month)?.label}</Td>
+              <Td right>{r.farmerMeetings}</Td>
+              <Td right>{r.retailerVisits}</Td>
+              <Td right bold>
+                {r.meetingCount > 0 ? Math.round(r.totalAttendees / r.meetingCount) : '—'}
+              </Td>
+            </Tr>
+          ))}
+          {rows.length === 0 && (
+            <tr><td colSpan={6} className="px-4 py-10 text-center text-sm text-gray-400">No meetings logged for this month.</td></tr>
+          )}
+        </tbody>
+      </TableWrap>
     </div>
   );
 }
