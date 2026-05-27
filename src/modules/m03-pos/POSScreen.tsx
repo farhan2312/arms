@@ -6,12 +6,14 @@ import type { ComponentType } from 'react';
 import {
   Search, UserCheck, User, AlertTriangle, Trash2, Plus, Minus,
   ShoppingCart, Tag, ChevronRight, X, CheckCircle2, Banknote,
-  Smartphone, CreditCard, ReceiptText, Gift,
+  Smartphone, CreditCard, ReceiptText, Gift, RotateCcw, Printer,
+  UserPlus, SlidersHorizontal,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { mockProducts } from '../../data/mockProducts';
 import { mockBatches, mockProductStock } from '../../data/mockBatches';
 import { mockFarmers } from '../../data/mockFarmers';
+import { mockSaleTransactions } from '../../data/mockSaleTransactions';
 import { walletByFarmerId } from '../../data/mockLoyaltyWallets';
 import type { Product, Batch, SaleTransaction, SaleLine, PaymentMode } from '../../types/entities';
 import type { Farmer } from '../../types/entities';
@@ -48,6 +50,14 @@ const TIER_BADGE_CLS: Record<LoyaltyTier, string> = {
   Silver:   'bg-gray-200 text-gray-600',
   Gold:     'bg-yellow-100 text-yellow-700',
   Platinum: 'bg-purple-100 text-purple-700',
+};
+
+// Mock credit limits per farmer — replace with API: GET /api/farmers/:id/credit
+const FARMER_CREDIT: Record<string, { limitAmt: number; usedAmt: number }> = {
+  'fmr-001': { limitAmt: 10_000, usedAmt: 3_200 },
+  'fmr-002': { limitAmt:  5_000, usedAmt: 4_800 },
+  'fmr-004': { limitAmt:  8_000, usedAmt:     0 },
+  'fmr-007': { limitAmt: 15_000, usedAmt: 9_500 },
 };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -118,6 +128,24 @@ export default function POSScreen() {
   const toastTimer           = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevHasSubsidised    = useRef(false);
 
+  // ── Loyalty slider (partial redemption) ───────────────────────────────────
+  const [pointsSlider, setPointsSlider] = useState(0);
+
+  // ── Add New Farmer inline ────────────────────────────────────────────────
+  const [extraFarmers, setExtraFarmers] = useState<Farmer[]>([]);
+  const [showAddFarmerForm, setShowAddFarmerForm] = useState(false);
+  const [addFarmerName, setAddFarmerName] = useState('');
+  const [addFarmerVillage, setAddFarmerVillage] = useState('');
+  const [addFarmerMobile, setAddFarmerMobile] = useState('');
+
+  // ── Session transactions (for sale return) ────────────────────────────────
+  const [sessionTxns, setSessionTxns] = useState<SaleTransaction[]>([]);
+  const [pendingInvoiceNo, setPendingInvoiceNo] = useState('');
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnQuery, setReturnQuery] = useState('');
+  const [returnTxn, setReturnTxn] = useState<SaleTransaction | null>(null);
+  const [returnQtys, setReturnQtys] = useState<Record<string, number>>({});
+
   function showToast(msg: string) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast(msg);
@@ -137,10 +165,10 @@ export default function POSScreen() {
   const farmerResults = useMemo(() => {
     if (!farmerQuery.trim() || selectedFarmer || isWalkIn) return [];
     const q = farmerQuery.toLowerCase();
-    return mockFarmers
+    return [...mockFarmers, ...extraFarmers]
       .filter(f => f.mobile.includes(farmerQuery) || f.name.toLowerCase().includes(q))
       .slice(0, 6);
-  }, [farmerQuery, selectedFarmer, isWalkIn]);
+  }, [farmerQuery, selectedFarmer, isWalkIn, extraFarmers]);
 
   // ── Derived: current farmer's wallet ─────────────────────────────────────
   const wallet = useMemo(
@@ -200,8 +228,10 @@ export default function POSScreen() {
     // Redemption: 10 pts = ₹1; max 10 % of taxable total
     const maxRedeemAmt     = Math.floor(taxableTotal * 0.1);
     const redeemablePts    = Math.min(currentPoints, maxRedeemAmt * 10);
-    const redemptionAmt    = redeemPoints && wallet ? parseFloat((redeemablePts / 10).toFixed(2)) : 0;
-    const pointsToRedeem   = redeemPoints && wallet ? redeemablePts : 0;
+    // Slider controls exact points to redeem; clamped to [0, redeemablePts]
+    const clampedSlider    = redeemPoints && wallet ? Math.min(pointsSlider, redeemablePts) : 0;
+    const redemptionAmt    = parseFloat((clampedSlider / 10).toFixed(2));
+    const pointsToRedeem   = clampedSlider;
 
     const grandTotal = parseFloat((taxableTotal + totalGst - redemptionAmt).toFixed(2));
 
@@ -211,7 +241,16 @@ export default function POSScreen() {
     const pointsToEarn  = wallet ? Math.floor((eligibleBase / 10) * tierMult) : 0;
 
     return { taxableTotal, totalCgst, totalSgst, totalGst, redemptionAmt, pointsToRedeem, redeemablePts, grandTotal, pointsToEarn };
-  }, [lineCalc, cart, wallet, redeemPoints, currentPoints]);
+  }, [lineCalc, cart, wallet, redeemPoints, currentPoints, pointsSlider]);
+
+  // ── Credit limit check ────────────────────────────────────────────────────
+  const creditCheck = useMemo(() => {
+    if (paymentMode !== 'Credit' || !selectedFarmer) return null;
+    const credit = FARMER_CREDIT[selectedFarmer.id];
+    if (!credit) return null;
+    const available = credit.limitAmt - credit.usedAmt;
+    return { limitAmt: credit.limitAmt, usedAmt: credit.usedAmt, available, exceeded: totals.grandTotal > available };
+  }, [paymentMode, selectedFarmer, totals.grandTotal]);
 
   // ── Cart actions ──────────────────────────────────────────────────────────
 
@@ -287,11 +326,16 @@ export default function POSScreen() {
   }
 
   // ── Complete sale ─────────────────────────────────────────────────────────
-  function completeSale() {
+  function makeInvoiceNo() {
     const now = new Date();
     const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    return `INV-${currentStore?.code ?? 'STR'}-${dateStr}-S${String(sessionCount + 1).padStart(3, '0')}`;
+  }
+
+  function completeSale() {
+    const now = new Date();
     const txnId = `txn-ses-${Date.now()}`;
-    const invoiceNo = `INV-${currentStore?.code ?? 'STR'}-${dateStr}-S${String(sessionCount + 1).padStart(3, '0')}`;
+    const invoiceNo = pendingInvoiceNo || makeInvoiceNo();
     const farmerId = selectedFarmer?.id ?? 'walk-in';
 
     const lines: SaleLine[] = cart.map((c, i) => {
@@ -352,8 +396,8 @@ export default function POSScreen() {
 
     // ── Record to session log ─────────────────────────────────────────────
     // In production: POST /api/sales/transactions with `txn`
+    setSessionTxns(prev => [...prev, txn]);
     setSessionCount(n => n + 1);
-    void txn; // acknowledged
 
     // ── Toast ─────────────────────────────────────────────────────────────
     const name = selectedFarmer?.name ?? (walkInName.trim() || 'Walk-in Customer');
@@ -383,18 +427,77 @@ export default function POSScreen() {
     setCouponInput('');
     setCouponError('');
     setRedeemPoints(false);
+    setPointsSlider(0);
     setPaymentMode('Cash');
     setPaymentRef('');
     setShowModal(false);
+    setPendingInvoiceNo('');
     setAadhaarVerified(false);
     setAadhaarIsFallback(false);
     setMaskedAadhaar(null);
   }
 
+  // ── Add New Farmer ────────────────────────────────────────────────────────
+  function handleAddFarmer() {
+    if (!addFarmerName.trim()) return;
+    const now = new Date().toISOString();
+    const newFarmer: Farmer = {
+      id: `fmr-local-${Date.now()}`,
+      name: addFarmerName.trim(),
+      mobile: addFarmerMobile.trim() || 'Not provided',
+      kycStatus: 'Pending',
+      address: {
+        line1: '',
+        village: addFarmerVillage.trim() || undefined,
+        district: currentStore?.address.district ?? 'Unknown',
+        state:    currentStore?.address.state    ?? 'Maharashtra',
+        pincode:  currentStore?.address.pincode  ?? '000000',
+      },
+      landAcres: 0,
+      cropTypes: [],
+      loyaltyWalletId: '',
+      registeredAt: now,
+      registeredByStoreId: storeId ?? 'str-akl-001',
+      registeredByUserId: currentUser.id,
+      isActive: true,
+    };
+    setExtraFarmers(prev => [...prev, newFarmer]);
+    setSelectedFarmer(newFarmer);
+    setShowAddFarmerForm(false);
+    setAddFarmerName('');
+    setAddFarmerVillage('');
+    setAddFarmerMobile('');
+    setFarmerQuery('');
+    showToast(`"${newFarmer.name}" registered and selected.`);
+    console.log('// POST /api/farmers', newFarmer);
+  }
+
+  // ── Process Sale Return ───────────────────────────────────────────────────
+  function processReturn() {
+    if (!returnTxn) return;
+    const txn = returnTxn; // capture for use in closures
+    // Reverse loyalty points from farmer's wallet (session override)
+    if (txn.farmerId !== 'walk-in' && txn.loyaltyPointsEarned > 0) {
+      const w = walletByFarmerId.get(txn.farmerId);
+      if (w) {
+        setPointsOverride(prev => ({
+          ...prev,
+          [txn.farmerId]: (prev[txn.farmerId] ?? w.currentPoints) - txn.loyaltyPointsEarned,
+        }));
+      }
+    }
+    showToast(`Return processed — ${txn.invoiceNo}. Loyalty pts reversed.`);
+    console.log('// POST /api/sales/returns', { originalTxnId: txn.id, returnQtys });
+    setShowReturnModal(false);
+    setReturnTxn(null);
+    setReturnQtys({});
+    setReturnQuery('');
+  }
+
   // ── Flags ─────────────────────────────────────────────────────────────────
-  const hasSubsidised      = cart.some(c => c.product.isSubsidised);
-  const hasValidCustomer   = selectedFarmer !== null || (isWalkIn && walkInName.trim() !== '');
-  const canCheckout        = cart.length > 0 && hasValidCustomer;
+  const hasSubsidised    = cart.some(c => c.product.isSubsidised);
+  const hasValidCustomer = selectedFarmer !== null || (isWalkIn && walkInName.trim() !== '');
+  const canCheckout      = cart.length > 0 && hasValidCustomer && !(creditCheck?.exceeded);
   const aadhaarRequired    = hasSubsidised && !aadhaarVerified;
   const customerName       = selectedFarmer?.name ?? (isWalkIn && walkInName.trim() ? walkInName.trim() : null);
 
@@ -419,11 +522,20 @@ export default function POSScreen() {
             <p className="text-xs text-gray-400">{currentStore?.name ?? 'Bharat Agri Platform'} · {currentUser.name}</p>
           </div>
         </div>
-        {sessionCount > 0 && (
-          <span className="text-xs bg-emerald-100 text-emerald-700 font-semibold px-2.5 py-1 rounded-full">
-            {sessionCount} sale{sessionCount !== 1 ? 's' : ''} this session
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {sessionCount > 0 && (
+            <span className="text-xs bg-emerald-100 text-emerald-700 font-semibold px-2.5 py-1 rounded-full">
+              {sessionCount} sale{sessionCount !== 1 ? 's' : ''} this session
+            </span>
+          )}
+          <button
+            onClick={() => { setShowReturnModal(true); setReturnQuery(''); setReturnTxn(null); }}
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            <RotateCcw size={12} />
+            Return
+          </button>
+        </div>
       </div>
 
       {/* ── Main ───────────────────────────────────────────────────────── */}
@@ -524,14 +636,63 @@ export default function POSScreen() {
                 )}
 
                 {/* No results / walk-in prompt */}
-                {farmerQuery.length >= 3 && farmerResults.length === 0 && (
-                  <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 text-xs text-gray-500">
-                    <span>No farmer found for "{farmerQuery}"</span>
+                {farmerQuery.length >= 3 && farmerResults.length === 0 && !showAddFarmerForm && (
+                  <div className="bg-gray-50 rounded-lg px-3 py-2 text-xs text-gray-500">
+                    <p className="mb-1.5">No farmer found for "{farmerQuery}"</p>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => { setShowAddFarmerForm(true); setAddFarmerName(farmerQuery); }}
+                        className="flex items-center gap-1 text-emerald-600 font-semibold hover:underline"
+                      >
+                        <UserPlus size={11} /> Add New Farmer
+                      </button>
+                      <span className="text-gray-300">|</span>
+                      <button
+                        onClick={() => setIsWalkIn(true)}
+                        className="text-gray-500 hover:text-gray-700 hover:underline"
+                      >
+                        Proceed as Walk-in
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Add New Farmer mini-form */}
+                {showAddFarmerForm && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">Register New Farmer</p>
+                      <button
+                        onClick={() => { setShowAddFarmerForm(false); setAddFarmerName(''); }}
+                        className="text-emerald-400 hover:text-emerald-700"
+                      ><X size={13} /></button>
+                    </div>
+                    <input
+                      value={addFarmerName}
+                      onChange={e => setAddFarmerName(e.target.value)}
+                      placeholder="Full name *"
+                      className="w-full px-3 py-1.5 text-xs border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        value={addFarmerVillage}
+                        onChange={e => setAddFarmerVillage(e.target.value)}
+                        placeholder="Village"
+                        className="px-3 py-1.5 text-xs border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                      />
+                      <input
+                        value={addFarmerMobile}
+                        onChange={e => setAddFarmerMobile(e.target.value)}
+                        placeholder="Mobile number"
+                        className="px-3 py-1.5 text-xs border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                      />
+                    </div>
                     <button
-                      onClick={() => setIsWalkIn(true)}
-                      className="text-emerald-600 font-semibold hover:underline"
+                      onClick={handleAddFarmer}
+                      disabled={!addFarmerName.trim()}
+                      className="w-full py-1.5 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-40 transition-colors"
                     >
-                      Add as Walk-in →
+                      Save &amp; Select Farmer
                     </button>
                   </div>
                 )}
@@ -775,22 +936,50 @@ export default function POSScreen() {
 
             {/* Loyalty redemption */}
             {wallet && currentPoints > 0 && (
-              <div className="flex items-center justify-between bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
-                <div className="flex items-center gap-2">
-                  <Gift size={13} className="text-purple-600" />
-                  <div>
-                    <p className="text-xs font-semibold text-purple-900">Redeem loyalty points</p>
-                    <p className="text-[10px] text-purple-600">
-                      {totals.redeemablePts.toLocaleString('en-IN')} pts available → saves {fmt(totals.redeemablePts / 10)}
+              <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Gift size={13} className="text-purple-600" />
+                    <div>
+                      <p className="text-xs font-semibold text-purple-900">Redeem loyalty points</p>
+                      <p className="text-[10px] text-purple-600">
+                        {totals.redeemablePts.toLocaleString('en-IN')} pts available (max {fmt(totals.redeemablePts / 10)})
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const next = !redeemPoints;
+                      setRedeemPoints(next);
+                      setPointsSlider(next ? totals.redeemablePts : 0);
+                    }}
+                    className={`w-10 h-5 rounded-full transition-colors relative flex-shrink-0 ${redeemPoints ? 'bg-purple-500' : 'bg-gray-300'}`}
+                  >
+                    <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${redeemPoints ? 'left-5' : 'left-0.5'}`} />
+                  </button>
+                </div>
+                {redeemPoints && totals.redeemablePts > 0 && (
+                  <div className="space-y-1 pt-1 border-t border-purple-100">
+                    <div className="flex items-center gap-2">
+                      <SlidersHorizontal size={11} className="text-purple-500 flex-shrink-0" />
+                      <input
+                        type="range"
+                        min={0}
+                        max={totals.redeemablePts}
+                        step={10}
+                        value={pointsSlider}
+                        onChange={e => setPointsSlider(Number(e.target.value))}
+                        className="flex-1 accent-purple-500"
+                      />
+                      <span className="text-[10px] font-bold text-purple-700 w-16 text-right whitespace-nowrap">
+                        {pointsSlider.toLocaleString('en-IN')} pts
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-purple-600 text-right">
+                      Saves {fmt(pointsSlider / 10)} off grand total
                     </p>
                   </div>
-                </div>
-                <button
-                  onClick={() => setRedeemPoints(v => !v)}
-                  className={`w-10 h-5 rounded-full transition-colors relative flex-shrink-0 ${redeemPoints ? 'bg-purple-500' : 'bg-gray-300'}`}
-                >
-                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${redeemPoints ? 'left-5' : 'left-0.5'}`} />
-                </button>
+                )}
               </div>
             )}
 
@@ -859,15 +1048,33 @@ export default function POSScreen() {
               />
             )}
 
+            {/* Credit limit status */}
+            {creditCheck?.exceeded && (
+              <div className="flex items-start gap-2 bg-red-50 border border-red-300 rounded-lg px-3 py-2 text-xs text-red-700">
+                <AlertTriangle size={13} className="text-red-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold">Credit limit exceeded</p>
+                  <p className="text-[10px] mt-0.5">
+                    Limit {fmt(creditCheck.limitAmt)} · Used {fmt(creditCheck.usedAmt)} · Available {fmt(creditCheck.available)}
+                  </p>
+                </div>
+              </div>
+            )}
+            {creditCheck && !creditCheck.exceeded && (
+              <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">
+                <CheckCircle2 size={13} className="text-blue-500 flex-shrink-0" />
+                <span>Credit available: {fmt(creditCheck.available)} of {fmt(creditCheck.limitAmt)} limit</span>
+              </div>
+            )}
+
             {/* Complete sale — blocked until Aadhaar verified when cart has subsidised items */}
             <div className="relative group">
               <button
                 onClick={() => {
-                  if (aadhaarRequired) {
-                    setShowAadhaarModal(true);
-                  } else {
-                    setShowModal(true);
-                  }
+                  const invNo = makeInvoiceNo();
+                  setPendingInvoiceNo(invNo);
+                  if (aadhaarRequired) setShowAadhaarModal(true);
+                  else setShowModal(true);
                 }}
                 disabled={!canCheckout}
                 className={`w-full py-3 rounded-xl text-sm font-bold transition-colors disabled:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-400 text-white ${
@@ -905,14 +1112,25 @@ export default function POSScreen() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
 
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={18} className="text-emerald-600" />
-                <h2 className="font-bold text-gray-900">Confirm Sale</h2>
-              </div>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-700">
+            {/* GST Invoice Header */}
+            <div className="px-6 py-4 border-b border-gray-100 flex-shrink-0 relative">
+              <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-700">
                 <X size={18} />
               </button>
+              <div className="flex items-start justify-between pr-6">
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tax Invoice</p>
+                  <h2 className="text-base font-bold text-gray-900 font-mono mt-0.5">{pendingInvoiceNo}</h2>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-semibold text-gray-800">{currentStore?.name ?? 'Bharat Agri Store'}</p>
+                  <p className="text-[10px] text-gray-500 font-mono">{currentStore?.gstIn ?? '—'}</p>
+                  <p className="text-[10px] text-gray-400">{currentStore?.phone ?? '—'}</p>
+                </div>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
@@ -953,10 +1171,10 @@ export default function POSScreen() {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="text-gray-400 border-b border-gray-100">
-                      <th className="text-left pb-1 font-medium">Product</th>
+                      <th className="text-left pb-1 font-medium">Product / HSN</th>
                       <th className="text-center pb-1 font-medium">Qty</th>
                       <th className="text-right pb-1 font-medium">Rate</th>
-                      <th className="text-right pb-1 font-medium">GST</th>
+                      <th className="text-right pb-1 font-medium">CGST+SGST</th>
                       <th className="text-right pb-1 font-medium">Total</th>
                     </tr>
                   </thead>
@@ -967,11 +1185,15 @@ export default function POSScreen() {
                         <tr key={`${item.product.id}-${item.batch.id}`}>
                           <td className="py-1.5 pr-2">
                             <p className="font-medium text-gray-800 leading-snug">{item.product.name}</p>
-                            <p className="text-gray-400 font-mono text-[10px]">{item.batch.batchNo} · exp {item.batch.expiryDate}</p>
+                            <p className="text-gray-400 font-mono text-[10px]">
+                              HSN {item.product.hsnCode} · {item.batch.batchNo} · Exp {item.batch.expiryDate}
+                            </p>
                           </td>
-                          <td className="text-center py-1.5">{item.qty}</td>
+                          <td className="text-center py-1.5">{item.qty} {item.product.unit}</td>
                           <td className="text-right py-1.5">{fmt(item.product.b2cPrice)}</td>
-                          <td className="text-right py-1.5 text-gray-500">{item.product.taxSlabPct}%</td>
+                          <td className="text-right py-1.5 text-gray-500 text-[10px]">
+                            {fmt(lc.cgst)} + {fmt(lc.sgst)}
+                          </td>
                           <td className="text-right py-1.5 font-semibold text-gray-900">{fmt(lc.lineTotal)}</td>
                         </tr>
                       );
@@ -1024,10 +1246,142 @@ export default function POSScreen() {
                 Back
               </button>
               <button
+                onClick={() => window.print()}
+                className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-500 text-sm hover:bg-gray-50 transition-colors flex items-center gap-1.5"
+                title="Print invoice"
+              >
+                <Printer size={14} />
+              </button>
+              <button
                 onClick={completeSale}
                 className="flex-[2] py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition-colors"
               >
                 Confirm &amp; Record Sale
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Sale Return Modal ─────────────────────────────────────────────────── */}
+      {showReturnModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <RotateCcw size={16} className="text-orange-500" />
+                <h2 className="font-bold text-gray-900">Process Sale Return</h2>
+              </div>
+              <button onClick={() => setShowReturnModal(false)} className="text-gray-400 hover:text-gray-700">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+              {/* Invoice lookup */}
+              <div>
+                <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1.5">
+                  Invoice Number
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    value={returnQuery}
+                    onChange={e => setReturnQuery(e.target.value.toUpperCase())}
+                    placeholder="INV-AKL-20260527-S001"
+                    className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 font-mono"
+                  />
+                  <button
+                    onClick={() => {
+                      const found = [...sessionTxns, ...mockSaleTransactions]
+                        .find(t => t.invoiceNo === returnQuery.trim());
+                      if (found) {
+                        setReturnTxn(found);
+                        const qtys: Record<string, number> = {};
+                        found.lines.forEach(l => { qtys[l.id] = l.qty; });
+                        setReturnQtys(qtys);
+                      } else {
+                        showToast('Invoice not found. Try a session invoice or check the number.');
+                      }
+                    }}
+                    className="px-4 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-colors"
+                  >
+                    Lookup
+                  </button>
+                </div>
+              </div>
+
+              {returnTxn && (
+                <>
+                  <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-orange-900 font-mono">{returnTxn.invoiceNo}</span>
+                      <span className="text-orange-700">{returnTxn.invoiceDate} · {fmt(returnTxn.totalAmt)}</span>
+                    </div>
+                    <p className="text-orange-600 mt-0.5">
+                      Farmer: {returnTxn.farmerId === 'walk-in' ? 'Walk-in' : returnTxn.farmerId}
+                      {returnTxn.loyaltyPointsEarned > 0 && ` · ${returnTxn.loyaltyPointsEarned} pts earned (will be reversed)`}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2">Items to Return</p>
+                    <div className="space-y-2">
+                      {returnTxn.lines.map(line => (
+                        <div key={line.id} className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2.5">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-gray-800 leading-snug">{line.productName}</p>
+                            <p className="text-[10px] text-gray-400 font-mono">{line.sku} · {fmt(line.unitSellingPrice)}/unit</p>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <button
+                              onClick={() => setReturnQtys(p => ({ ...p, [line.id]: Math.max(0, (p[line.id] ?? line.qty) - 1) }))}
+                              className="w-6 h-6 rounded border border-gray-200 flex items-center justify-center hover:bg-gray-100"
+                            ><Minus size={9} /></button>
+                            <span className="text-sm font-bold w-6 text-center">{returnQtys[line.id] ?? line.qty}</span>
+                            <button
+                              onClick={() => setReturnQtys(p => ({ ...p, [line.id]: Math.min(line.qty, (p[line.id] ?? line.qty) + 1) }))}
+                              className="w-6 h-6 rounded border border-gray-200 flex items-center justify-center hover:bg-gray-100"
+                            ><Plus size={9} /></button>
+                            <span className="text-[10px] text-gray-400">/ {line.qty}</span>
+                          </div>
+                          <span className="text-xs font-semibold text-orange-700 w-16 text-right flex-shrink-0">
+                            {fmt(line.lineTotal * ((returnQtys[line.id] ?? line.qty) / line.qty))}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-xl p-3 text-xs">
+                    <div className="flex justify-between font-semibold">
+                      <span className="text-gray-600">Return credit</span>
+                      <span className="text-orange-700">
+                        {fmt(returnTxn.lines.reduce((s, l) => s + l.lineTotal * ((returnQtys[l.id] ?? l.qty) / l.qty), 0))}
+                      </span>
+                    </div>
+                    {returnTxn.loyaltyPointsEarned > 0 && (
+                      <p className="text-orange-600 mt-1">
+                        {returnTxn.loyaltyPointsEarned} loyalty pts will be reversed from wallet
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-100 flex gap-3 flex-shrink-0">
+              <button
+                onClick={() => setShowReturnModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={processReturn}
+                disabled={!returnTxn}
+                className="flex-[2] py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm transition-colors disabled:opacity-40"
+              >
+                Confirm Return
               </button>
             </div>
           </div>
@@ -1042,7 +1396,7 @@ export default function POSScreen() {
             setMaskedAadhaar(result.maskedAadhaar);
             setAadhaarIsFallback(result.isFallback);
             setShowAadhaarModal(false);
-            // Proceed directly to confirmation modal
+            if (!pendingInvoiceNo) setPendingInvoiceNo(makeInvoiceNo());
             setShowModal(true);
           }}
           onClose={() => setShowAadhaarModal(false)}
