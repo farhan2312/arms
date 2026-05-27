@@ -5,7 +5,7 @@ import {
   Ticket, Map, Briefcase, Star, Wallet, SlidersHorizontal,
   BarChart3, Activity, Settings, Sprout, Store, Megaphone,
   Building2, BookOpen, FileMinus, CircleDollarSign, ChevronUp,
-  ClipboardList,
+  ClipboardList, ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { NavItem, UserRole } from '../types';
@@ -23,6 +23,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Farmers',           path: '/farmers',         icon: Users,             roles: ['StoreIncharge', 'BDM', 'B2BSalesExecutive'] },
   { label: 'Coupons',           path: '/coupons',         icon: Ticket,            roles: ['StoreIncharge', 'Finance'] },
   { label: 'Daily Bookkeeping', path: '/bookkeeping',     icon: BookOpen,          roles: ['StoreIncharge', 'Finance'] },
+  { label: 'Compliance',        path: '/compliance',      icon: ShieldCheck,       roles: ['StoreIncharge', 'Finance'] },
   { label: 'Procurement',       path: '/procurement',     icon: ClipboardList,     roles: ['StoreIncharge', 'WarehouseManager', 'BDM', 'OperationsHead'] },
   { label: 'Loyalty Lookup',    path: '/wallet-lookup',   icon: Wallet,            roles: ['StoreIncharge'] },
 

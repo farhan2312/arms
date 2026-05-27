@@ -16,6 +16,8 @@ import { walletByFarmerId } from '../../data/mockLoyaltyWallets';
 import type { Product, Batch, SaleTransaction, SaleLine, PaymentMode } from '../../types/entities';
 import type { Farmer } from '../../types/entities';
 import type { LoyaltyTier } from '../../types/loyalty';
+import AadhaarVerificationModal from '../m08-compliance/AadhaarVerificationModal';
+import type { AadhaarVerificationResult } from '../m08-compliance/AadhaarVerificationModal';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -105,9 +107,16 @@ export default function POSScreen() {
   // ── Confirmation modal ────────────────────────────────────────────────────
   const [showModal, setShowModal] = useState(false);
 
+  // ── Aadhaar compliance ────────────────────────────────────────────────────
+  const [showAadhaarModal, setShowAadhaarModal] = useState(false);
+  const [aadhaarVerified, setAadhaarVerified]   = useState(false);
+  const [aadhaarIsFallback, setAadhaarIsFallback] = useState(false);
+  const [maskedAadhaar, setMaskedAadhaar]       = useState<string | null>(null);
+
   // ── Toast ─────────────────────────────────────────────────────────────────
   const [toast, setToast] = useState('');
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastTimer           = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevHasSubsidised    = useRef(false);
 
   function showToast(msg: string) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -354,6 +363,15 @@ export default function POSScreen() {
         : `Sale recorded — ${invoiceNo}.`,
     );
 
+    // ── Compliance log ─────────────────────────────────────────────────────
+    if (maskedAadhaar) {
+      console.log('// POST /api/compliance/records', {
+        invoiceNo, storeId, maskedAadhaar,
+        isFallback: aadhaarIsFallback,
+        farmerId,
+      });
+    }
+
     // ── Reset ─────────────────────────────────────────────────────────────
     setCart([]);
     setSelectedFarmer(null);
@@ -368,13 +386,25 @@ export default function POSScreen() {
     setPaymentMode('Cash');
     setPaymentRef('');
     setShowModal(false);
+    setAadhaarVerified(false);
+    setAadhaarIsFallback(false);
+    setMaskedAadhaar(null);
   }
 
   // ── Flags ─────────────────────────────────────────────────────────────────
-  const hasSubsidised    = cart.some(c => c.product.isSubsidised);
-  const hasValidCustomer = selectedFarmer !== null || (isWalkIn && walkInName.trim() !== '');
-  const canCheckout      = cart.length > 0 && hasValidCustomer;
-  const customerName     = selectedFarmer?.name ?? (isWalkIn && walkInName.trim() ? walkInName.trim() : null);
+  const hasSubsidised      = cart.some(c => c.product.isSubsidised);
+  const hasValidCustomer   = selectedFarmer !== null || (isWalkIn && walkInName.trim() !== '');
+  const canCheckout        = cart.length > 0 && hasValidCustomer;
+  const aadhaarRequired    = hasSubsidised && !aadhaarVerified;
+  const customerName       = selectedFarmer?.name ?? (isWalkIn && walkInName.trim() ? walkInName.trim() : null);
+
+  // Auto-trigger Aadhaar modal when the first subsidised item enters the cart
+  useEffect(() => {
+    if (hasSubsidised && !prevHasSubsidised.current && !aadhaarVerified) {
+      setShowAadhaarModal(true);
+    }
+    prevHasSubsidised.current = hasSubsidised;
+  }, [hasSubsidised, aadhaarVerified]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -537,13 +567,29 @@ export default function POSScreen() {
             )}
           </div>
 
-          {/* Subsidised product warning */}
+          {/* Subsidised product — Aadhaar verification status */}
           {hasSubsidised && (
-            <div className="mx-4 mt-3 flex items-center gap-2 bg-yellow-50 border border-yellow-300 rounded-lg px-3 py-2 flex-shrink-0">
-              <AlertTriangle size={14} className="text-yellow-600 flex-shrink-0" />
-              <p className="text-xs font-medium text-yellow-800">
-                Aadhaar e-KYC verification required at checkout for subsidised fertiliser
+            <div className={`mx-4 mt-3 flex items-center gap-2 rounded-lg px-3 py-2 flex-shrink-0 border ${
+              aadhaarVerified
+                ? 'bg-emerald-50 border-emerald-200'
+                : 'bg-yellow-50 border-yellow-300'
+            }`}>
+              {aadhaarVerified
+                ? <CheckCircle2 size={14} className="text-emerald-600 flex-shrink-0" />
+                : <AlertTriangle size={14} className="text-yellow-600 flex-shrink-0" />}
+              <p className={`text-xs font-medium flex-1 ${aadhaarVerified ? 'text-emerald-800' : 'text-yellow-800'}`}>
+                {aadhaarVerified
+                  ? <>Farmer Verified ✓ &nbsp;<span className="font-mono text-emerald-600">{maskedAadhaar}</span></>
+                  : 'Aadhaar e-KYC verification required for subsidised fertiliser'}
               </p>
+              {!aadhaarVerified && (
+                <button
+                  onClick={() => setShowAadhaarModal(true)}
+                  className="flex-shrink-0 text-[11px] font-bold text-yellow-700 bg-yellow-200 hover:bg-yellow-300 px-2 py-1 rounded transition-colors"
+                >
+                  Verify Now
+                </button>
+              )}
             </div>
           )}
 
@@ -813,14 +859,37 @@ export default function POSScreen() {
               />
             )}
 
-            {/* Complete sale */}
-            <button
-              onClick={() => setShowModal(true)}
-              disabled={!canCheckout}
-              className="w-full py-3 rounded-xl text-sm font-bold transition-colors bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-400 text-white"
-            >
-              {canCheckout ? `Complete Sale · ${fmt(totals.grandTotal)}` : 'Add items & customer to proceed'}
-            </button>
+            {/* Complete sale — blocked until Aadhaar verified when cart has subsidised items */}
+            <div className="relative group">
+              <button
+                onClick={() => {
+                  if (aadhaarRequired) {
+                    setShowAadhaarModal(true);
+                  } else {
+                    setShowModal(true);
+                  }
+                }}
+                disabled={!canCheckout}
+                className={`w-full py-3 rounded-xl text-sm font-bold transition-colors disabled:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-400 text-white ${
+                  aadhaarRequired
+                    ? 'bg-amber-500 hover:bg-amber-600'
+                    : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}
+              >
+                {!canCheckout
+                  ? 'Add items & customer to proceed'
+                  : aadhaarRequired
+                  ? `Verify Aadhaar to Complete Sale · ${fmt(totals.grandTotal)}`
+                  : `Complete Sale · ${fmt(totals.grandTotal)}`}
+              </button>
+              {canCheckout && aadhaarRequired && (
+                <div className="absolute bottom-full left-0 right-0 mb-1 hidden group-hover:block pointer-events-none">
+                  <div className="bg-gray-900 text-white text-[10px] px-2 py-1 rounded text-center">
+                    Aadhaar verification required — click to verify
+                  </div>
+                </div>
+              )}
+            </div>
 
             {!hasValidCustomer && cart.length > 0 && (
               <p className="text-[10px] text-center text-amber-600">
@@ -847,6 +916,25 @@ export default function POSScreen() {
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+              {/* Aadhaar verification status in confirmation */}
+              {hasSubsidised && aadhaarVerified && (
+                <div className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs border ${
+                  aadhaarIsFallback
+                    ? 'bg-amber-50 border-amber-300 text-amber-800'
+                    : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                }`}>
+                  {aadhaarIsFallback
+                    ? <AlertTriangle size={13} className="text-amber-600 flex-shrink-0" />
+                    : <CheckCircle2 size={13} className="text-emerald-600 flex-shrink-0" />}
+                  <span className="font-semibold">
+                    {aadhaarIsFallback
+                      ? 'Manual Aadhaar verification — this sale will be flagged for Compliance review'
+                      : `Aadhaar e-KYC verified`}
+                  </span>
+                  <span className="font-mono ml-1">{maskedAadhaar}</span>
+                </div>
+              )}
+
               {/* Customer */}
               <div>
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Customer</p>
@@ -944,6 +1032,21 @@ export default function POSScreen() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Aadhaar Verification Modal ───────────────────────────────────────── */}
+      {showAadhaarModal && (
+        <AadhaarVerificationModal
+          onSuccess={(result: AadhaarVerificationResult) => {
+            setAadhaarVerified(true);
+            setMaskedAadhaar(result.maskedAadhaar);
+            setAadhaarIsFallback(result.isFallback);
+            setShowAadhaarModal(false);
+            // Proceed directly to confirmation modal
+            setShowModal(true);
+          }}
+          onClose={() => setShowAadhaarModal(false)}
+        />
       )}
 
       {/* ── Toast ────────────────────────────────────────────────────────────── */}
