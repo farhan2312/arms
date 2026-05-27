@@ -23,6 +23,7 @@ import OperationsHeadDashboard from './modules/m12-analytics/OperationsHeadDashb
 import BookkeepingPage from './modules/m09-bookkeeping/BookkeepingPage';
 import ProcurementPage from './modules/m05-procurement/ProcurementPage';
 import ComplianceDashboard from './modules/m08-compliance/ComplianceDashboard';
+import CreditNotes from './modules/m10-creditnotes/CreditNotes';
 
 export default function App() {
   return (
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="bookkeeping"     element={<BookkeepingPage />} />
             <Route path="procurement"     element={<ProcurementPage />} />
             <Route path="compliance"      element={<ComplianceDashboard />} />
+            <Route path="credit-notes"    element={<CreditNotes />} />
 
             {/* Catalogue */}
             <Route path="products"        element={<ProductsPage />} />
