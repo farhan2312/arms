@@ -1,27 +1,28 @@
 import { useState } from 'react';
-import { Search, Plus, Phone, MapPin, Target, Route, Users, ReceiptText } from 'lucide-react';
+import { Search, Plus, Phone, MapPin, Target, Route, Users, ReceiptText, Pencil, CheckCircle2 } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
 import Badge, { statusVariant } from '../../components/ui/Badge';
 import type { FieldAgent } from '../../types';
 import JourneyLog from '../m11-fieldforce/JourneyLog';
 import MeetingLog from '../m11-fieldforce/MeetingLog';
 import TADASummary from '../m11-fieldforce/TADASummary';
+import AgentForm from './AgentForm';
 
-const mockAgents: FieldAgent[] = [
-  { id: 'a001', name: 'Arun Kale', phone: '9871234560', employeeCode: 'FF-MH-001', territory: 'Akola–Washim Belt', district: 'Akola', state: 'Maharashtra', managerId: 'u002', managerName: 'Priya Sharma', targetFarmers: 150, visitedFarmers: 132, salesMTD: 284500, joiningDate: '2022-06-01', status: 'Active' },
-  { id: 'a002', name: 'Deepak Salve', phone: '9760001234', employeeCode: 'FF-MH-002', territory: 'Buldhana–Khamgaon', district: 'Buldhana', state: 'Maharashtra', managerId: 'u002', managerName: 'Priya Sharma', targetFarmers: 120, visitedFarmers: 98, salesMTD: 198000, joiningDate: '2023-01-15', status: 'Active' },
-  { id: 'a003', name: 'Savita Aware', phone: '9651239870', employeeCode: 'FF-MH-003', territory: 'Amravati South', district: 'Amravati', state: 'Maharashtra', managerId: 'u002', managerName: 'Priya Sharma', targetFarmers: 100, visitedFarmers: 72, salesMTD: 145000, joiningDate: '2023-08-20', status: 'On Leave' },
-  { id: 'a004', name: 'Nagesh Rao', phone: '9540987651', employeeCode: 'FF-TS-001', territory: 'Warangal Rural', district: 'Warangal', state: 'Telangana', managerId: 'u004', managerName: 'Kavitha Reddy', targetFarmers: 140, visitedFarmers: 140, salesMTD: 362000, joiningDate: '2021-11-10', status: 'Active' },
-  { id: 'a005', name: 'Sundaram Pillai', phone: '9431265740', employeeCode: 'FF-TN-001', territory: 'Thanjavur Delta', district: 'Thanjavur', state: 'Tamil Nadu', managerId: 'u003', managerName: 'Anand Deshmukh', targetFarmers: 90, visitedFarmers: 45, salesMTD: 88000, joiningDate: '2024-03-01', status: 'Active' },
-  { id: 'a006', name: 'Rekha Biradar', phone: '9320098761', employeeCode: 'FF-KA-001', territory: 'Bidar–Gulbarga', district: 'Bidar', state: 'Karnataka', managerId: 'u003', managerName: 'Anand Deshmukh', targetFarmers: 110, visitedFarmers: 0, salesMTD: 0, joiningDate: '2023-06-01', status: 'Inactive' },
+const SEED_AGENTS: FieldAgent[] = [
+  { id: 'a001', name: 'Arun Kale',       phone: '9871234560', employeeCode: 'FF-MH-001', territory: 'Akola–Washim Belt',  district: 'Akola',     state: 'Maharashtra', managerId: 'u002', managerName: 'Priya Sharma',    targetFarmers: 150, visitedFarmers: 132, salesMTD: 284500, joiningDate: '2022-06-01', status: 'Active' },
+  { id: 'a002', name: 'Deepak Salve',    phone: '9760001234', employeeCode: 'FF-MH-002', territory: 'Buldhana–Khamgaon', district: 'Buldhana',   state: 'Maharashtra', managerId: 'u002', managerName: 'Priya Sharma',    targetFarmers: 120, visitedFarmers: 98,  salesMTD: 198000, joiningDate: '2023-01-15', status: 'Active' },
+  { id: 'a003', name: 'Savita Aware',    phone: '9651239870', employeeCode: 'FF-MH-003', territory: 'Amravati South',    district: 'Amravati',   state: 'Maharashtra', managerId: 'u002', managerName: 'Priya Sharma',    targetFarmers: 100, visitedFarmers: 72,  salesMTD: 145000, joiningDate: '2023-08-20', status: 'On Leave' },
+  { id: 'a004', name: 'Nagesh Rao',      phone: '9540987651', employeeCode: 'FF-TS-001', territory: 'Warangal Rural',    district: 'Warangal',   state: 'Telangana',   managerId: 'u004', managerName: 'Kavitha Reddy',   targetFarmers: 140, visitedFarmers: 140, salesMTD: 362000, joiningDate: '2021-11-10', status: 'Active' },
+  { id: 'a005', name: 'Sundaram Pillai', phone: '9431265740', employeeCode: 'FF-TN-001', territory: 'Thanjavur Delta',   district: 'Thanjavur',  state: 'Tamil Nadu',  managerId: 'u003', managerName: 'Anand Deshmukh',  targetFarmers: 90,  visitedFarmers: 45,  salesMTD: 88000,  joiningDate: '2024-03-01', status: 'Active' },
+  { id: 'a006', name: 'Rekha Biradar',   phone: '9320098761', employeeCode: 'FF-KA-001', territory: 'Bidar–Gulbarga',   district: 'Bidar',      state: 'Karnataka',   managerId: 'u003', managerName: 'Anand Deshmukh',  targetFarmers: 110, visitedFarmers: 0,   salesMTD: 0,      joiningDate: '2023-06-01', status: 'Inactive' },
 ];
 
 type Tab = 'agents' | 'journeys' | 'meetings' | 'tada';
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: 'agents',   label: 'Agents',       icon: Users },
-  { id: 'journeys', label: 'Journey Log',  icon: Route },
-  { id: 'meetings', label: 'Meeting Log',  icon: ClipboardListIcon },
+  { id: 'agents',   label: 'Agents',        icon: Users },
+  { id: 'journeys', label: 'Journey Log',   icon: Route },
+  { id: 'meetings', label: 'Meeting Log',   icon: ClipboardListIcon },
   { id: 'tada',     label: 'TA/DA Summary', icon: ReceiptText },
 ];
 
@@ -48,11 +49,15 @@ function ClipboardListIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export default function FieldForcePage() {
-  const [activeTab, setActiveTab] = useState<Tab>('agents');
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [agents, setAgents]               = useState<FieldAgent[]>(SEED_AGENTS);
+  const [activeTab, setActiveTab]         = useState<Tab>('agents');
+  const [search, setSearch]               = useState('');
+  const [statusFilter, setStatusFilter]   = useState('All');
+  const [showForm, setShowForm]           = useState(false);
+  const [editingAgent, setEditingAgent]   = useState<FieldAgent | undefined>(undefined);
+  const [toast, setToast]                 = useState<string | null>(null);
 
-  const filtered = mockAgents.filter((a) => {
+  const filtered = agents.filter((a) => {
     const matchSearch =
       a.name.toLowerCase().includes(search.toLowerCase()) ||
       a.employeeCode.toLowerCase().includes(search.toLowerCase()) ||
@@ -61,10 +66,42 @@ export default function FieldForcePage() {
     return matchSearch && matchStatus;
   });
 
-  const totalSalesMTD = mockAgents.reduce((s, a) => s + a.salesMTD, 0);
+  const totalSalesMTD = agents.reduce((s, a) => s + a.salesMTD, 0);
   const avgAchievement = Math.round(
-    (mockAgents.reduce((s, a) => s + (a.visitedFarmers / a.targetFarmers) * 100, 0) / mockAgents.length),
+    agents.reduce((s, a) => s + (a.visitedFarmers / Math.max(a.targetFarmers, 1)) * 100, 0) / Math.max(agents.length, 1),
   );
+
+  function openAdd() {
+    setEditingAgent(undefined);
+    setShowForm(true);
+  }
+
+  function openEdit(agent: FieldAgent) {
+    setEditingAgent(agent);
+    setShowForm(true);
+  }
+
+  function handleSave(saved: FieldAgent) {
+    if (editingAgent) {
+      setAgents((prev) => prev.map((a) => (a.id === saved.id ? saved : a)));
+      showToast(`Agent ${saved.name} updated successfully`);
+    } else {
+      setAgents((prev) => [saved, ...prev]);
+      showToast(`Agent ${saved.name} added successfully`);
+    }
+    setShowForm(false);
+    setEditingAgent(undefined);
+  }
+
+  function handleClose() {
+    setShowForm(false);
+    setEditingAgent(undefined);
+  }
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  }
 
   return (
     <div className="p-6">
@@ -73,7 +110,10 @@ export default function FieldForcePage() {
         subtitle="Territory-wise agent performance, journeys and TA/DA"
         actions={
           activeTab === 'agents' ? (
-            <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
+            <button
+              onClick={openAdd}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors"
+            >
               <Plus size={15} />
               Add Agent
             </button>
@@ -106,8 +146,8 @@ export default function FieldForcePage() {
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Active Agents</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                {mockAgents.filter((a) => a.status === 'Active').length}
-                <span className="text-sm font-normal text-gray-400"> / {mockAgents.length}</span>
+                {agents.filter((a) => a.status === 'Active').length}
+                <span className="text-sm font-normal text-gray-400"> / {agents.length}</span>
               </p>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -148,7 +188,7 @@ export default function FieldForcePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {filtered.map((agent) => {
-              const coverage = Math.round((agent.visitedFarmers / agent.targetFarmers) * 100);
+              const coverage = Math.round((agent.visitedFarmers / Math.max(agent.targetFarmers, 1)) * 100);
               return (
                 <div key={agent.id} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-sm transition-shadow">
                   <div className="flex items-start justify-between mb-3">
@@ -161,7 +201,16 @@ export default function FieldForcePage() {
                         <p className="text-[11px] text-gray-400 font-mono">{agent.employeeCode}</p>
                       </div>
                     </div>
-                    <Badge label={agent.status} variant={statusVariant(agent.status)} />
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Badge label={agent.status} variant={statusVariant(agent.status)} />
+                      <button
+                        onClick={() => openEdit(agent)}
+                        className="text-gray-300 hover:text-emerald-600 transition-colors"
+                        title="Edit agent"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-1.5 text-xs text-gray-500 mb-4">
@@ -198,6 +247,12 @@ export default function FieldForcePage() {
                 </div>
               );
             })}
+
+            {filtered.length === 0 && (
+              <div className="col-span-3 py-16 text-center text-sm text-gray-400">
+                No agents match the current filters.
+              </div>
+            )}
           </div>
         </>
       )}
@@ -205,6 +260,24 @@ export default function FieldForcePage() {
       {activeTab === 'journeys' && <JourneyLog />}
       {activeTab === 'meetings' && <MeetingLog />}
       {activeTab === 'tada'     && <TADASummary />}
+
+      {/* Slide-over */}
+      {showForm && (
+        <AgentForm
+          agent={editingAgent}
+          agentCount={agents.length}
+          onSave={handleSave}
+          onClose={handleClose}
+        />
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 flex items-center gap-2.5 bg-gray-900 text-white text-sm font-medium px-5 py-3 rounded-xl shadow-2xl z-[100]">
+          <CheckCircle2 size={16} className="text-emerald-400 flex-shrink-0" />
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

@@ -98,6 +98,9 @@ export interface Coupon {
   isActive: boolean;
 }
 
+export type AgentRole = 'BDM' | 'ABDM' | 'StoreIncharge' | 'B2BSalesExecutive' | 'FieldAgent';
+export type TransportMode = 'Two-Wheeler' | 'Four-Wheeler' | 'Public Transport';
+
 export interface FieldAgent {
   id: string;
   name: string;
@@ -113,6 +116,12 @@ export interface FieldAgent {
   salesMTD: number;
   joiningDate: string;
   status: 'Active' | 'Inactive' | 'On Leave';
+  // Extended fields (optional to preserve existing seed data)
+  role?: AgentRole;
+  transportMode?: TransportMode;
+  hqLocation?: string;
+  assignedStoreIds?: string[];
+  assignedRetailerIds?: string[];
 }
 
 export interface LoyaltyTransaction {
