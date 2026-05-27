@@ -390,3 +390,5 @@ export default function MeetingLog() {
     </div>
   );
 }
+
+export { SEED_MEETINGS };

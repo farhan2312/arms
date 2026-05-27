@@ -17,7 +17,7 @@ import B2BReceivables from './modules/m13-b2b/B2BReceivables';
 import LoyaltyDashboard from './modules/m14-loyalty/LoyaltyDashboard';
 import FarmerWalletView from './modules/m14-loyalty/FarmerWalletView';
 import TierManagementPanel from './modules/m14-loyalty/TierManagementPanel';
-import ReportsPage from './modules/m10-reports/ReportsPage';
+import Reports from './modules/m12-analytics/Reports';
 import SettingsPage from './modules/m01-settings/SettingsPage';
 import OperationsHeadDashboard from './modules/m12-analytics/OperationsHeadDashboard';
 import BookkeepingPage from './modules/m09-bookkeeping/BookkeepingPage';
@@ -65,7 +65,7 @@ export default function App() {
             <Route path="tier-management" element={<TierManagementPanel />} />
 
             {/* Reports & Analytics */}
-            <Route path="reports"         element={<ReportsPage />} />
+            <Route path="reports"         element={<Reports />} />
             <Route path="analytics"       element={<OperationsHeadDashboard />} />
 
             {/* Admin */}

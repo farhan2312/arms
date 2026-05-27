@@ -14,8 +14,6 @@ const PAYMENT_TERMS = [
 const SALES_EXECS = MOCK_USERS.filter((u) => u.role === 'B2BSalesExecutive');
 const BDM_USERS   = MOCK_USERS.filter((u) => u.role === 'BDM');
 
-interface KycFile { name: string; fileName: string | null }
-
 interface FormState {
   firmName: string;
   ownerName: string;
